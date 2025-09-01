@@ -36,4 +36,23 @@ public class SqlBladeStateProvider<T>(DbContext dbContext) : BladeStateProvider<
         set.RemoveRange(set);
         await _dbContext.SaveChangesAsync();
     }
+    // --- Dispose hook ---
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // fire and forget (Dispose cannot be async)
+            try
+            {
+                ClearStateAsync().GetAwaiter().GetResult();
+            }
+            catch
+            {
+                // optional: swallow/log exceptions, since Dispose should not throw
+            }
+        }
+
+        base.Dispose(disposing);
+    }
+
 }
