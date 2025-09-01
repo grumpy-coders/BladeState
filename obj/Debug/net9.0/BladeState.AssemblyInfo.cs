@@ -17,7 +17,7 @@ using System.Reflection;
     "age \r\n      for persisting data across requests without relying on HttpContext.S" +
     "ession.\r\n    "))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fab5aa9cf783ee71871d86369285d2ea5436042d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d20dd70c52ee8c9c65e468d941236c7143bcaa42")]
 [assembly: System.Reflection.AssemblyProductAttribute("BladeState")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BladeState")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
