@@ -6,9 +6,12 @@ namespace BladeState;
 /// <summary>
 /// Defines persistence for a given state type.
 /// </summary>
-public abstract class BladeStateProvider<T> where T : class, new()
+public abstract class BladeStateProvider<T> : IDisposable where T : class, new()
 {
     public T State { get; set; } = new T();
+
+    public Profile Profile { get; set; } = new();
+
     public virtual Task<T> LoadStateAsync()
     {
         return Task.FromResult(State ?? new T());
@@ -26,5 +29,28 @@ public abstract class BladeStateProvider<T> where T : class, new()
         return Task.CompletedTask;
     }
 
-    public Profile Profile { get; set; } = new();
+    // --- IDisposable pattern ---
+    private bool _disposed;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // free managed resources here
+                // subclasses can override to dispose e.g. DbContext, Redis connection, etc.
+            }
+
+            // free unmanaged resources here (if any)
+
+            _disposed = true;
+        }
+    }
 }
