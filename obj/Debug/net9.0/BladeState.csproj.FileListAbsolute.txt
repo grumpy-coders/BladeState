@@ -1,0 +1,13 @@
+P:\projects\BladeState\obj\Debug\net9.0\BladeState.csproj.AssemblyReference.cache
+P:\projects\BladeState\obj\Debug\net9.0\BladeState.GeneratedMSBuildEditorConfig.editorconfig
+P:\projects\BladeState\obj\Debug\net9.0\BladeState.AssemblyInfoInputs.cache
+P:\projects\BladeState\obj\Debug\net9.0\BladeState.AssemblyInfo.cs
+P:\projects\BladeState\obj\Debug\net9.0\BladeState.csproj.CoreCompileInputs.cache
+P:\projects\BladeState\obj\Debug\net9.0\BladeState.sourcelink.json
+P:\projects\BladeState\bin\Debug\net9.0\BladeState.deps.json
+P:\projects\BladeState\bin\Debug\net9.0\BladeState.dll
+P:\projects\BladeState\bin\Debug\net9.0\BladeState.pdb
+P:\projects\BladeState\obj\Debug\net9.0\BladeState.dll
+P:\projects\BladeState\obj\Debug\net9.0\refint\BladeState.dll
+P:\projects\BladeState\obj\Debug\net9.0\BladeState.pdb
+P:\projects\BladeState\obj\Debug\net9.0\ref\BladeState.dll

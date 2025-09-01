@@ -1,35 +1,36 @@
+using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
 namespace BladeState.Providers;
 
-public class SqlBladeStateProvider<T> : IBladeStateProvider<T> where T : class, new()
+public class SqlBladeStateProvider<T>(DbContext dbContext) : BladeStateProvider<T> where T : class, new()
 {
-    private readonly DbContext _dbContext;
+    private readonly DbContext _dbContext = dbContext;
+    public string StateId { get; set; } = Guid.NewGuid().ToString();
 
-    public SqlBladeStateProvider(DbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
-
-    public async Task<T> LoadStateAsync()
+    public override async Task<T> LoadStateAsync()
     {
         // Assumes table maps to T
         return await _dbContext.Set<T>().FirstOrDefaultAsync();
     }
 
-    public async Task SaveStateAsync(T state)
+    public async override Task SaveStateAsync(T state)
     {
         var set = _dbContext.Set<T>();
-        if (!_dbContext.Entry(state).IsKeySet)
-            set.Add(state);
-        else
+        if (_dbContext.Entry(state).IsKeySet)
+        {
             set.Update(state);
+        }
+        else
+        {
+            set.Add(state);
+        }
 
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task ClearStateAsync()
+    public async override Task ClearStateAsync()
     {
         var set = _dbContext.Set<T>();
         set.RemoveRange(set);

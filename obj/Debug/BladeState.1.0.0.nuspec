@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>BladeState</id>
+    <version>1.0.0</version>
+    <authors>doomfaller</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <projectUrl>https://github.com/doomfaller/BladeState</projectUrl>
+    <description>BladeState is a lightweight server-side state/session persistence library 
+      for Razor and Blazor applications. It provides dependency-injected storage 
+      for persisting data across requests without relying on HttpContext.Session.</description>
+    <tags>razor blazor session state storage persistence dependency-injection server-side aspnetcore</tags>
+    <repository type="git" url="https://github.com/doomfaller/BladeState" commit="fab5aa9cf783ee71871d86369285d2ea5436042d" />
+    <dependencies>
+      <group targetFramework="net9.0">
+        <dependency id="Microsoft.EntityFrameworkCore" version="9.0.8" exclude="Build,Analyzers" />
+        <dependency id="StackExchange.Redis" version="2.9.11" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="P:\projects\BladeState\bin\Debug\net9.0\BladeState.dll" target="lib\net9.0\BladeState.dll" />
+  </files>
+</package>
