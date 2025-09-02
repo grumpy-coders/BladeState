@@ -14,7 +14,7 @@ public class BladeStateStore<T>(BladeStateProvider<T> provider) where T : class,
 
     public async Task LoadStateAsync()
     {
-        var databaseState = await _provider.LoadStateAsync();
+        T databaseState = await _provider.LoadStateAsync();
         State = databaseState ?? new T();
     }
 
