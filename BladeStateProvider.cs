@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BladeState;
@@ -12,24 +13,32 @@ public abstract class BladeStateProvider<T> : IDisposable where T : class, new()
 
     public Profile Profile { get; set; } = new();
 
-    public virtual Task<T> LoadStateAsync()
+    public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromResult(State); // get whatever the current value is. unsure of consequences here :P
+
         return Task.FromResult(State ?? new T());
     }
 
-    public virtual Task SaveStateAsync(T state)
+    public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromCanceled(cancellationToken);
+
         State = state;
         return Task.CompletedTask;
     }
 
-    public virtual Task ClearStateAsync()
+    public virtual Task ClearStateAsync(CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromCanceled(cancellationToken);
+            
         State = new T();
         return Task.CompletedTask;
     }
 
-    // --- IDisposable pattern ---
     private bool _disposed;
 
     public void Dispose()
@@ -47,8 +56,6 @@ public abstract class BladeStateProvider<T> : IDisposable where T : class, new()
                 // free managed resources here
                 // subclasses can override to dispose e.g. DbContext, Redis connection, etc.
             }
-
-            // free unmanaged resources here (if any)
 
             _disposed = true;
         }

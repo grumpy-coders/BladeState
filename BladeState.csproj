@@ -7,8 +7,8 @@
 
     <!-- NuGet Package Identity -->
     <PackageId>BladeState</PackageId>
-    <Authors>doomfaller</Authors>
-    <Company>doomfaller</Company>
+    <Authors>doomfaller,lorddurus</Authors>
+    <Company>grumpy-coders</Company>
 
     <!-- Discoverability -->
     <Description>

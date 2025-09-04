@@ -1,58 +1,93 @@
 using System;
+using System.Data.Common;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 
-namespace BladeState.Providers;
-
-public class SqlBladeStateProvider<T>(DbContext dbContext) : BladeStateProvider<T> where T : class, new()
+namespace BladeState.Providers
 {
-    private readonly DbContext _dbContext = dbContext;
-    public string StateId { get; set; } = Guid.NewGuid().ToString();
-
-    public override async Task<T> LoadStateAsync()
+    public class SqlBladeStateProvider<T> : BladeStateProvider<T> where T : class, new()
     {
-        // Assumes table maps to T
-        return await _dbContext.Set<T>().FirstOrDefaultAsync();
-    }
+        private readonly Func<DbConnection> _connectionFactory;
+        private readonly string _tableName;
 
-    public async override Task SaveStateAsync(T state)
-    {
-        var set = _dbContext.Set<T>();
-        if (_dbContext.Entry(state).IsKeySet)
+        private static readonly JsonSerializerOptions _jsonOptions = new()
         {
-            set.Update(state);
-        }
-        else
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false
+        };
+
+        public SqlBladeStateProvider(Func<DbConnection> connectionFactory, string tableName = "BladeState")
         {
-            set.Add(state);
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+            _tableName = tableName;
         }
 
-        await _dbContext.SaveChangesAsync();
-    }
-
-    public async override Task ClearStateAsync()
-    {
-        var set = _dbContext.Set<T>();
-        set.RemoveRange(set);
-        await _dbContext.SaveChangesAsync();
-    }
-    // --- Dispose hook ---
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
+        public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
         {
-            // fire and forget (Dispose cannot be async)
-            try
-            {
-                ClearStateAsync().GetAwaiter().GetResult();
-            }
-            catch
-            {
-                // optional: swallow/log exceptions, since Dispose should not throw
-            }
+            using var connection = _connectionFactory();
+            await connection.OpenAsync(cancellationToken);
+
+            using var command = connection.CreateCommand();
+            command.CommandText = $"SELECT StateJson FROM {_tableName} WHERE Id = @Id";
+
+            var idParam = command.CreateParameter();
+            idParam.ParameterName = "@Id";
+            idParam.Value = Profile.Id;
+            command.Parameters.Add(idParam);
+
+            object? result = await command.ExecuteScalarAsync(cancellationToken);
+
+            if (result is null || result == DBNull.Value)
+                return new T();
+
+            return JsonSerializer.Deserialize<T>((string)result, _jsonOptions) ?? new T();
         }
 
-        base.Dispose(disposing);
-    }
+        public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+        {
+            using var connection = _connectionFactory();
+            await connection.OpenAsync(cancellationToken);
 
+            string json = JsonSerializer.Serialize(state, _jsonOptions);
+
+            using var command = connection.CreateCommand();
+            command.CommandText = $@"
+                MERGE {_tableName} AS target
+                USING (SELECT @Id AS Id, @StateJson AS StateJson) AS source
+                ON target.Id = source.Id
+                WHEN MATCHED THEN 
+                    UPDATE SET StateJson = source.StateJson
+                WHEN NOT MATCHED THEN
+                    INSERT (Id, StateJson) VALUES (source.Id, source.StateJson);";
+
+            var idParam = command.CreateParameter();
+            idParam.ParameterName = "@Id";
+            idParam.Value = Profile.Id;
+            command.Parameters.Add(idParam);
+
+            var stateParam = command.CreateParameter();
+            stateParam.ParameterName = "@StateJson";
+            stateParam.Value = json;
+            command.Parameters.Add(stateParam);
+
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
+        {
+            using var connection = _connectionFactory();
+            await connection.OpenAsync(cancellationToken);
+
+            using var command = connection.CreateCommand();
+            command.CommandText = $"DELETE FROM {_tableName} WHERE Id = @Id";
+
+            var idParam = command.CreateParameter();
+            idParam.ParameterName = "@Id";
+            idParam.Value = Profile.Id;
+            command.Parameters.Add(idParam);
+
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+    }
 }
