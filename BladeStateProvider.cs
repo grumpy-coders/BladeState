@@ -13,36 +13,32 @@ public abstract class BladeStateProvider<T> : IDisposable where T : class, new()
 
     public Profile Profile { get; set; } = new();
 
-    // --- Load ---
-    public Task<T> LoadStateAsync() =>
-        LoadStateAsync(CancellationToken.None);
-
-    public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken)
+    public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromResult(State); // get whatever the current value is. unsure of consequences here :P
+
         return Task.FromResult(State ?? new T());
     }
 
-    // --- Save ---
-    public Task SaveStateAsync(T state) =>
-        SaveStateAsync(state, CancellationToken.None);
-
-    public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken)
+    public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromCanceled(cancellationToken);
+
         State = state;
         return Task.CompletedTask;
     }
 
-    // --- Clear ---
-    public Task ClearStateAsync() =>
-        ClearStateAsync(CancellationToken.None);
-
-    public virtual Task ClearStateAsync(CancellationToken cancellationToken)
+    public virtual Task ClearStateAsync(CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromCanceled(cancellationToken);
+            
         State = new T();
         return Task.CompletedTask;
     }
 
-    // --- IDisposable pattern ---
     private bool _disposed;
 
     public void Dispose()
