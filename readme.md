@@ -14,8 +14,7 @@ It provides **dependency-injected storage** for persisting state across requests
 * 🗂 Server-side storage abstraction
 * ⚡ Easy integration with **Dependency Injection**
 * 🔄 Works across Razor & Blazor server applications
-* 🛡 Avoids reliance on `HttpContext.Session`
-* 🔧 Extensible design for custom providers (SQL, Redis, EF Core, InMemory)
+* 🔧 Extensible design for custom providers (e.g. Redis, SQL, Memory Cache)
 
 ---
 
@@ -29,38 +28,26 @@ dotnet add package BladeState
 
 ---
 
-## 🚀 Quick Start
+## 🛠 Providers
 
-### Define Your State
+BladeState includes multiple built-in providers for persisting state:
 
-```csharp
-public class MyState
-{
-    public string SomeValue { get; set; } = "Hello";
-    public int Counter { get; set; } = 0;
-}
+### 1. Memory Cache Provider (`MemoryCacheBladeStateProvider<T>`) ⚡
+
+### 2. SQL Provider (`SqlBladeStateProvider<T>`) 📃
+
+The SQL provider stores state in a relational database table using JSON serialization.
+
+#### Example schema
+
+```sql
+CREATE TABLE BladeState (
+    Id NVARCHAR(256) PRIMARY KEY,
+    StateJson NVARCHAR(MAX) NOT NULL
+);
 ```
 
-### Register BladeState in DI
-
-You can register any provider using the built-in extension method:
-
-```csharp
-using BladeState;
-using BladeState.Providers;
-
-builder.Services.AddBladeState<MyState, RedisBladeStateProvider<MyState>>();
-```
-
-This pattern works with any provider you add (`SqlBladeStateProvider<T>`, `RedisBladeStateProvider<T>`, `EfCoreBladeStateProvider<T>`).
-
----
-
-## 🗄️ SQL Provider Setup
-
-You can configure `SqlBladeStateProvider<T>` to work as a singleton in your DI container while still creating a **new `DbConnection` per operation**. This avoids connection pooling issues while keeping state accessible throughout your app.
-
-### 1️⃣ Configure `appsettings.json`
+#### Setup via `appsettings.json`
 
 ```json
 {
@@ -70,92 +57,57 @@ You can configure `SqlBladeStateProvider<T>` to work as a singleton in your DI c
 }
 ```
 
-### 2️⃣ Register in `Program.cs`
+#### Registration
 
 ```csharp
 using Microsoft.Data.SqlClient;
 using BladeState.Providers;
 
-var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.AddBladeState<MyState, SqlBladeStateProvider<MyState>>();
 
-builder.Services.AddSingleton<SqlBladeStateProvider<MyState>>(sp =>
-{
-    var config = sp.GetRequiredService<IConfiguration>();
-    var connString = config.GetConnectionString("BladeState");
-    return new SqlBladeStateProvider<MyState>(() => new SqlConnection(connString));
-});
+builder.Services.AddSingleton(sp => new SqlBladeStateProvider<MyState>(
+    () => new SqlConnection(builder.Configuration.GetConnectionString("BladeState")),
+    tableName: "BladeState",   // optional, defaults to "BladeState"
+    stateId: "CustomStateId"   // optional, defaults to typeof(T).Name
+));
 ```
 
-### 3️⃣ Inject and use
+#### How it works
 
-```csharp
-public class MyService
-{
-    private readonly SqlBladeStateProvider<MyState> _stateProvider;
-
-    public MyService(SqlBladeStateProvider<MyState> stateProvider)
-    {
-        _stateProvider = stateProvider;
-    }
-
-    public async Task DoWorkAsync()
-    {
-        await _stateProvider.LoadStateAsync();
-        _stateProvider.State.SomeValue = "Updated!";
-        _stateProvider.State.Counter++;
-        await _stateProvider.SaveStateAsync();
-    }
-}
-```
+* Uses a simple key/value table (`Id`, `StateJson`).
+* JSON serialization handled automatically.
 
 ---
 
-## 🧩 Redis Provider Setup
+### 3. Redis Provider (`RedisBladeStateProvider<T>`) 🔥
 
-`RedisBladeStateProvider<T>` persists state to Redis using [StackExchange.Redis](https://stackexchange.github.io/StackExchange.Redis/).
+Stores state in Redis using `StackExchange.Redis`.
 
-### Register
+#### Registration
 
 ```csharp
-using StackExchange.Redis;
 using BladeState.Providers;
+using StackExchange.Redis;
 
-builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-    ConnectionMultiplexer.Connect("localhost"));
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+    ConnectionMultiplexer.Connect("localhost")
+);
 
 builder.Services.AddBladeState<MyState, RedisBladeStateProvider<MyState>>();
 ```
 
-### Usage
+#### Notes
 
-```csharp
-public class MyService
-{
-    private readonly RedisBladeStateProvider<MyState> _stateProvider;
-
-    public MyService(RedisBladeStateProvider<MyState> stateProvider)
-    {
-        _stateProvider = stateProvider;
-    }
-
-    public async Task DoWorkAsync()
-    {
-        await _stateProvider.LoadStateAsync();
-        _stateProvider.State.SomeValue = "From Redis";
-        await _stateProvider.SaveStateAsync();
-    }
-}
-```
+* Stores JSON under a Redis key like `BladeState-{Profile.Id}`.
+* Fast, distributed, great for scale-out.
 
 ---
 
-## 🗃 EF Core Provider Setup
+### 4. EF Core Provider (`EfCoreBladeStateProvider<T>`) 🟢
 
-`EfCoreBladeStateProvider<T>` persists state directly into an EF Core-managed database.
+Uses an Entity Framework `DbContext` to persist state directly in your model.
 
-### Register
+#### Registration
 
 ```csharp
 using BladeState.Providers;
@@ -167,58 +119,58 @@ builder.Services.AddDbContext<MyDbContext>(options =>
 builder.Services.AddBladeState<MyState, EfCoreBladeStateProvider<MyState>>();
 ```
 
-### Usage
+#### Notes
+
+* Assumes `T` maps directly to a table via EF Core.
+* Uses normal `DbContext.SaveChangesAsync()` semantics.
+* Best for when you want strongly typed schema vs JSON.
+
+---
+
+## ⚖️ Provider Comparison
+
+| Provider    | Best For                            | Pros                                               | Cons                                           |
+| ----------- | ----------------------------------- | -------------------------------------------------- | ---------------------------------------------- |
+| **Memory Cache** | Performance and application level processing | Simple, next to no overhead, fast | Requires custom handling for persistence if necessary |
+| **SQL**     | Simple persistence in relational DB | Works out of the box, JSON storage | Tied to SQL dialect, less efficient than Redis |
+| **Redis**   | High-performance distributed cache  | Fast, scalable, great for web farms                | Requires Redis infrastructure, persistence optional     |
+| **EF Core** | Strongly-typed relational models    | Uses your existing EF models, schema-first         | More overhead, requires migrations             |
+
+---
+
+## 🧩 Simple Service Collection Wire-up
+
+Usage:
+
+```csharp
+builder.Services.AddBladeState<MyState, SqlBladeStateProvider<MyState>>();
+```
+
+---
+
+## 📖 Example: Consuming State
 
 ```csharp
 public class MyService
 {
-    private readonly EfCoreBladeStateProvider<MyState> _stateProvider;
+    private readonly BladeStateProvider<MyState> _stateProvider;
 
-    public MyService(EfCoreBladeStateProvider<MyState> stateProvider)
+    public MyService(BladeStateProvider<MyState> stateProvider)
     {
         _stateProvider = stateProvider;
     }
 
     public async Task DoWorkAsync()
     {
-        await _stateProvider.LoadStateAsync();
-        _stateProvider.State.SomeValue = "From EF Core";
-        await _stateProvider.SaveStateAsync();
+        var state = await _stateProvider.LoadStateAsync();
+        state.Counter++;
+        await _stateProvider.SaveStateAsync(state);
     }
 }
 ```
 
 ---
 
-## 🛠️ Custom Providers
+## 📝 License
 
-If SQL, Redis, or EF Core isn’t your persistence layer, you can build your own by extending `BladeStateProvider<T>`:
-
-```csharp
-public class CustomBladeStateProvider<T> : BladeStateProvider<T> where T : class, new()
-{
-    public override Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
-    {
-        // Implement persistence
-        return Task.CompletedTask;
-    }
-
-    public override Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
-    {
-        // Implement load
-        return Task.FromResult(new T());
-    }
-
-    public override Task ClearStateAsync(CancellationToken cancellationToken = default)
-    {
-        // Implement clearing
-        return Task.CompletedTask;
-    }
-}
-```
-
----
-
-## 📖 License
-
-MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
