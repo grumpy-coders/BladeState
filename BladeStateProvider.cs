@@ -13,6 +13,11 @@ public abstract class BladeStateProvider<T> : IDisposable where T : class, new()
 
     public Profile Profile { get; set; } = new();
 
+    /// <summary>
+    /// Generic quick user for any purpose.
+    /// </summary>
+    public object Tag { get; set; } = new();
+
     public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
@@ -34,7 +39,7 @@ public abstract class BladeStateProvider<T> : IDisposable where T : class, new()
     {
         if (cancellationToken.IsCancellationRequested)
             return Task.FromCanceled(cancellationToken);
-            
+
         State = new T();
         return Task.CompletedTask;
     }
