@@ -35,21 +35,20 @@ public class EfCoreBladeStateProvider<T>(DbContext dbContext) : BladeStateProvid
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    protected override void Dispose(bool disposing)
+    /// <summary>
+    /// Async disposal hook: cleanup persisted state before disposal.
+    /// </summary>
+    protected override async ValueTask DisposeAsyncCore()
     {
-        if (disposing)
+        try
         {
-            // fire and forget
-            try
-            {
-                ClearStateAsync(CancellationToken.None).GetAwaiter().GetResult();
-            }
-            catch
-            {
-                // optional: swallow/log exceptions, since Dispose should not throw
-            }
+            await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch
+        {
+            // swallow or log exceptions, since Dispose must not throw
         }
 
-        base.Dispose(disposing);
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

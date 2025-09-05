@@ -5,62 +5,56 @@ using System.Threading.Tasks;
 
 namespace BladeState.Providers;
 
-public class RedisBladeStateProvider<T> : BladeStateProvider<T> where T : class, new()
+public class RedisBladeStateProvider<T>(IConnectionMultiplexer redis, string keyPrefix = "BladeState") : BladeStateProvider<T> where T : class, new()
 {
-    private readonly IDatabase _redis;
-    private readonly string _keyPrefix;
+	private readonly IDatabase _redis = redis.GetDatabase();
+	private readonly string _keyPrefix = keyPrefix;
 
-    public RedisBladeStateProvider(IConnectionMultiplexer redis, string keyPrefix = "BladeState")
-    {
-        _redis = redis.GetDatabase();
-        _keyPrefix = keyPrefix;
-    }
+	private string GetKey() => $"{_keyPrefix}-{Profile.Id}";
 
-    private string GetKey() => $"{_keyPrefix}-{Profile.Id}";
+	public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
+	{
+		RedisValue value = await _redis.StringGetAsync(GetKey()).ConfigureAwait(false);
+		if (cancellationToken.IsCancellationRequested)
+			return new T();
 
-    public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
-    {
-        RedisValue value = await _redis.StringGetAsync(GetKey()).ConfigureAwait(false);
-        if (cancellationToken.IsCancellationRequested)
-            return new T();
+		return value.IsNullOrEmpty
+			 ? new T()
+			 : JsonSerializer.Deserialize<T>(value!) ?? new T();
+	}
 
-        return value.IsNullOrEmpty 
-            ? new T() 
-            : JsonSerializer.Deserialize<T>(value!) ?? new T();
-    }
+	public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+	{
+		if (cancellationToken.IsCancellationRequested)
+			return;
 
-    public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
-    {
-        if (cancellationToken.IsCancellationRequested)
-            return;
+		string json = JsonSerializer.Serialize(state);
+		await _redis.StringSetAsync(GetKey(), json).ConfigureAwait(false);
+	}
 
-        string json = JsonSerializer.Serialize(state);
-        await _redis.StringSetAsync(GetKey(), json).ConfigureAwait(false);
-    }
+	public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
+	{
+		if (cancellationToken.IsCancellationRequested)
+			return;
 
-    public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
-    {
-        if (cancellationToken.IsCancellationRequested)
-            return;
+		await _redis.KeyDeleteAsync(GetKey()).ConfigureAwait(false);
+	}
 
-        await _redis.KeyDeleteAsync(GetKey()).ConfigureAwait(false);
-    }
 
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            try
-            {
-                // cleanup persisted state (optional) before disposal
-                ClearStateAsync().GetAwaiter().GetResult();
-            }
-            catch
-            {
-                // swallow/log exceptions, since Dispose must not throw
-            }
-        }
+	/// <summary>
+	/// Async disposal hook: cleanup persisted state before disposal.
+	/// </summary>
+	protected override async ValueTask DisposeAsyncCore()
+	{
+		try
+		{
+			await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+		}
+		catch
+		{
+			// swallow or log exceptions, since Dispose must not throw
+		}
 
-        base.Dispose(disposing);
-    }
+		await base.DisposeAsyncCore().ConfigureAwait(false);
+	}
 }
