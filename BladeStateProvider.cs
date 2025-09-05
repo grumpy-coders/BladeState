@@ -9,60 +9,60 @@ namespace BladeState;
 /// </summary>
 public abstract class BladeStateProvider<T> : IDisposable where T : class, new()
 {
-    public T State { get; set; } = new T();
+	public T State { get; set; } = new T();
 
-    public Profile Profile { get; set; } = new();
+	public Profile Profile { get; set; } = new();
 
-    /// <summary>
-    /// Generic quick user for any purpose.
-    /// </summary>
-    public object Tag { get; set; } = new();
+	/// <summary>
+	/// Generic quick user for any purpose.
+	/// </summary>
+	public object Tag { get; set; } = new();
 
-    public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
-    {
-        if (cancellationToken.IsCancellationRequested)
-            return Task.FromResult(State); // get whatever the current value is. unsure of consequences here :P
+	public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
+	{
+		if (cancellationToken.IsCancellationRequested)
+			return Task.FromResult(State); // get whatever the current value is. unsure of consequences here :P
 
-        return Task.FromResult(State ?? new T());
-    }
+		return Task.FromResult(State ?? new T());
+	}
 
-    public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
-    {
-        if (cancellationToken.IsCancellationRequested)
-            return Task.FromCanceled(cancellationToken);
+	public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+	{
+		if (cancellationToken.IsCancellationRequested)
+			return Task.FromCanceled(cancellationToken);
 
-        State = state;
-        return Task.CompletedTask;
-    }
+		State = state;
+		return Task.CompletedTask;
+	}
 
-    public virtual Task ClearStateAsync(CancellationToken cancellationToken = default)
-    {
-        if (cancellationToken.IsCancellationRequested)
-            return Task.FromCanceled(cancellationToken);
+	public virtual Task ClearStateAsync(CancellationToken cancellationToken = default)
+	{
+		if (cancellationToken.IsCancellationRequested)
+			return Task.FromCanceled(cancellationToken);
 
-        State = new T();
-        return Task.CompletedTask;
-    }
+		State = new T();
+		return Task.CompletedTask;
+	}
 
-    private bool _disposed;
+	private bool _disposed;
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+	public void Dispose()
+	{
+		Dispose(true);
+		GC.SuppressFinalize(this);
+	}
 
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposed)
-        {
-            if (disposing)
-            {
-                // free managed resources here
-                // subclasses can override to dispose e.g. DbContext, Redis connection, etc.
-            }
+	protected virtual void Dispose(bool disposing)
+	{
+		if (!_disposed)
+		{
+			if (disposing)
+			{
+				// free managed resources here
+				// subclasses can override to dispose e.g. DbContext, Redis connection, etc.
+			}
 
-            _disposed = true;
-        }
-    }
+			_disposed = true;
+		}
+	}
 }
