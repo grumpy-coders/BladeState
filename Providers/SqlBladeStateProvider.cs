@@ -25,18 +25,18 @@ namespace BladeState.Providers
 
         public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
         {
-            using var connection = _connectionFactory();
+            using DbConnection connection = _connectionFactory();
             await connection.OpenAsync(cancellationToken);
 
-            using var command = connection.CreateCommand();
+            using DbCommand command = connection.CreateCommand();
             command.CommandText = $"SELECT StateJson FROM {_tableName} WHERE Id = @Id";
 
-            var idParam = command.CreateParameter();
-            idParam.ParameterName = "@Id";
-            idParam.Value = Profile.Id;
-            command.Parameters.Add(idParam);
+            DbParameter idParameter = command.CreateParameter();
+            idParameter.ParameterName = "@Id";
+            idParameter.Value = Profile.Id;
+            command.Parameters.Add(idParameter);
 
-            object? result = await command.ExecuteScalarAsync(cancellationToken);
+            object result = await command.ExecuteScalarAsync(cancellationToken);
 
             if (result is null || result == DBNull.Value)
                 return new T();
@@ -46,12 +46,12 @@ namespace BladeState.Providers
 
         public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
         {
-            using var connection = _connectionFactory();
+            using DbConnection connection = _connectionFactory();
             await connection.OpenAsync(cancellationToken);
 
             string json = JsonSerializer.Serialize(state, _jsonOptions);
 
-            using var command = connection.CreateCommand();
+            using DbCommand command = connection.CreateCommand();
             command.CommandText = $@"
                 MERGE {_tableName} AS target
                 USING (SELECT @Id AS Id, @StateJson AS StateJson) AS source
@@ -61,12 +61,12 @@ namespace BladeState.Providers
                 WHEN NOT MATCHED THEN
                     INSERT (Id, StateJson) VALUES (source.Id, source.StateJson);";
 
-            var idParam = command.CreateParameter();
-            idParam.ParameterName = "@Id";
-            idParam.Value = Profile.Id;
-            command.Parameters.Add(idParam);
+            DbParameter idParameter = command.CreateParameter();
+            idParameter.ParameterName = "@Id";
+            idParameter.Value = Profile.Id;
+            command.Parameters.Add(idParameter);
 
-            var stateParam = command.CreateParameter();
+            DbParameter stateParam = command.CreateParameter();
             stateParam.ParameterName = "@StateJson";
             stateParam.Value = json;
             command.Parameters.Add(stateParam);
@@ -76,16 +76,16 @@ namespace BladeState.Providers
 
         public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
         {
-            using var connection = _connectionFactory();
+            using DbConnection connection = _connectionFactory();
             await connection.OpenAsync(cancellationToken);
 
-            using var command = connection.CreateCommand();
+            using DbCommand command = connection.CreateCommand();
             command.CommandText = $"DELETE FROM {_tableName} WHERE Id = @Id";
 
-            var idParam = command.CreateParameter();
-            idParam.ParameterName = "@Id";
-            idParam.Value = Profile.Id;
-            command.Parameters.Add(idParam);
+            DbParameter idParameter = command.CreateParameter();
+            idParameter.ParameterName = "@Id";
+            idParameter.Value = Profile.Id;
+            command.Parameters.Add(idParameter);
 
             await command.ExecuteNonQueryAsync(cancellationToken);
         }

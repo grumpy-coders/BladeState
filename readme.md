@@ -171,6 +171,35 @@ public class MyService
 
 ---
 
+## Built-in Encryption ❔🪽
+
+BladeState automatically encrypts persisted state data using AES encryption.
+
+Enabled by default – you don’t need to do anything.
+
+Encryption key – if not provided, BladeState will generate one automatically, simplifying encryption and decryption without explicit wire-up.
+You may also supply your own key, example below
+
+``` csharp
+
+builder.Services.AddBladeState<MyAppState, SqlBladeStateProvider<MyAppState>>(
+    useEncryption: true,
+    encryptionKey: "my-custom-key" // Your key supplied as a string value
+);
+
+```
+
+Optionally (and highly NOT recommended for Production 😁):
+You may turn off encryption – you can explicitly disable encryption if needed for testing purposes.
+
+``` csharp
+
+builder.Services.AddBladeState<MyAppState, RedisBladeStateProvider<MyAppState>>(
+    useEncryption: false
+);
+
+```
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

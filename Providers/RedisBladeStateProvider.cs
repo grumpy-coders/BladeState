@@ -1,5 +1,4 @@
 using StackExchange.Redis;
-using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,7 +46,6 @@ public class RedisBladeStateProvider<T> : BladeStateProvider<T> where T : class,
         await _redis.KeyDeleteAsync(GetKey()).ConfigureAwait(false);
     }
 
-    // --- Dispose hook ---
     protected override void Dispose(bool disposing)
     {
         if (disposing)

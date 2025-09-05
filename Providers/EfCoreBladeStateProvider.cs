@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -8,11 +7,9 @@ namespace BladeState.Providers;
 public class EfCoreBladeStateProvider<T>(DbContext dbContext) : BladeStateProvider<T> where T : class, new()
 {
     private readonly DbContext _dbContext = dbContext;
-    public string StateId { get; set; } = Guid.NewGuid().ToString();
 
     public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
-        // Assumes table maps directly to T
         return await _dbContext.Set<T>().FirstOrDefaultAsync(cancellationToken) ?? new T();
     }
 
@@ -38,12 +35,11 @@ public class EfCoreBladeStateProvider<T>(DbContext dbContext) : BladeStateProvid
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    // --- Dispose hook ---
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            // fire and forget (Dispose cannot be async)
+            // fire and forget
             try
             {
                 ClearStateAsync(CancellationToken.None).GetAwaiter().GetResult();
