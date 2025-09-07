@@ -1,38 +1,112 @@
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using BladeState.Cryptography;
+using BladeState.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BladeState.Providers;
 
-public class EfCoreBladeStateProvider<T>(DbContext dbContext) : BladeStateProvider<T> where T : class, new()
+public class EfCoreBladeStateProvider<T>(
+    DbContext dbContext,
+    BladeStateCryptography bladeStateCryptography,
+    BladeStateProfile bladeStateProfile
+) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
     private readonly DbContext _dbContext = dbContext;
 
     public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Set<T>().FirstOrDefaultAsync(cancellationToken) ?? new T();
+        if (cancellationToken.IsCancellationRequested)
+            return State;
+
+
+        BladeStateEntity entity;
+
+        try
+        {
+            entity = await _dbContext.Set<BladeStateEntity>()
+                .FirstAsync(e => e.InstanceId == Profile.InstanceId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            State = new T();
+            return State;
+        }
+
+        if (Profile.AutoEncrypt)
+        {
+            CipherState = entity.StateData;
+            DecryptState();
+            return State;
+        }
+
+        State = JsonSerializer.Deserialize<T>(entity.StateData);
+        return State;
     }
 
     public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
     {
-        DbSet<T> set = _dbContext.Set<T>();
-        if (_dbContext.Entry(state).IsKeySet)
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        string data;
+
+        if (Profile.AutoEncrypt)
         {
-            set.Update(state);
+            EncryptState();
+            data = CipherState;
         }
         else
         {
-            await set.AddAsync(state, cancellationToken);
+            data = JsonSerializer.Serialize(state);
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        BladeStateEntity entity;
+        DbSet<BladeStateEntity> set = _dbContext.Set<BladeStateEntity>();
+
+        try
+        {
+            entity = await set.SingleAsync(e => e.InstanceId == Profile.InstanceId, cancellationToken).ConfigureAwait(false);
+            entity.StateData = data;
+
+            set.Update(entity);
+        }
+        catch
+        {
+            entity = new BladeStateEntity { InstanceId = Profile.InstanceId, StateData = data };
+
+            await set.AddAsync(entity, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
     {
-        DbSet<T> set = _dbContext.Set<T>();
-        set.RemoveRange(set);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        DbSet<BladeStateEntity> set = _dbContext.Set<BladeStateEntity>();
+        BladeStateEntity entity;
+
+        try
+        {
+            entity = await set.SingleAsync(e => e.InstanceId == Profile.InstanceId, cancellationToken)
+                .ConfigureAwait(false);
+            set.Remove(entity);
+            await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            throw new KeyNotFoundException($"InstanceId: '{Profile.InstanceId}' was not found in the DbSet");
+        }
+
+        CipherState = string.Empty;
+        State = new T();
     }
 
     /// <summary>

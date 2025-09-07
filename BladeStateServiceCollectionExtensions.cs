@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using BladeState.Cryptography;
+using BladeState.Models;
 
 namespace BladeState;
 
@@ -7,17 +8,15 @@ public static class BladeStateServiceCollectionExtensions
 {
     public static IServiceCollection AddBladeState<T, TProvider>(
         this IServiceCollection services,
-        bool useEncryption = true,
-        string encryptionKey = "")
+        BladeStateProfile profile)
         where T : class, new()
         where TProvider : BladeStateProvider<T>
     {
-        services.AddSingleton<BladeStateProvider<T>, TProvider>();
+        services.AddSingleton(profile);
 
-        if (useEncryption)
-        {
-            services.AddSingleton(_ => new BladeStateCryptography(encryptionKey));
-        }
+        services.AddSingleton(new BladeStateCryptography(profile.EncryptionKey));
+
+        services.AddSingleton<BladeStateProvider<T>, TProvider>();
 
         return services;
     }

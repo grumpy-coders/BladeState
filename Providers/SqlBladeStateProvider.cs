@@ -1,93 +1,142 @@
 using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using BladeState.Cryptography;
+using BladeState.Models;
 
-namespace BladeState.Providers
+namespace BladeState.Providers;
+
+public class SqlBladeStateProvider<T>(
+    Func<DbConnection> connectionFactory,
+    BladeStateCryptography bladeStateCryptography,
+    BladeStateProfile bladeStateProfile
+) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
-    public class SqlBladeStateProvider<T> : BladeStateProvider<T> where T : class, new()
+    private readonly Func<DbConnection> _connectionFactory = connectionFactory;
+
+    public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
-        private readonly Func<DbConnection> _connectionFactory;
-        private readonly string _tableName;
+        if (cancellationToken.IsCancellationRequested)
+            return State;
 
-        private static readonly JsonSerializerOptions _jsonOptions = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = false
-        };
+        await using DbConnection conn = _connectionFactory();
+        await conn.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-        public SqlBladeStateProvider(Func<DbConnection> connectionFactory, string tableName = "BladeState")
+        await using DbCommand cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT TOP 1 Data FROM BladeState WHERE InstanceId = @InstanceId";
+        DbParameter param = cmd.CreateParameter();
+        param.ParameterName = "@InstanceId";
+        param.Value = Profile.InstanceId;
+        cmd.Parameters.Add(param);
+
+        string data;
+
+        try
         {
-            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-            _tableName = tableName;
+            object result = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            data = (string)result;
+        }
+        catch
+        {
+            State = new T();
+            return State;
         }
 
-        public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
+        if (Profile.AutoEncrypt)
         {
-            using DbConnection connection = _connectionFactory();
-            await connection.OpenAsync(cancellationToken);
-
-            using DbCommand command = connection.CreateCommand();
-            command.CommandText = $"SELECT StateJson FROM {_tableName} WHERE Id = @Id";
-
-            DbParameter idParameter = command.CreateParameter();
-            idParameter.ParameterName = "@Id";
-            idParameter.Value = Profile.Id;
-            command.Parameters.Add(idParameter);
-
-            object result = await command.ExecuteScalarAsync(cancellationToken);
-
-            if (result is null || result == DBNull.Value)
-                return new T();
-
-            return JsonSerializer.Deserialize<T>((string)result, _jsonOptions) ?? new T();
+            CipherState = data;
+            DecryptState();
+            return State;
         }
 
-        public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+        State = JsonSerializer.Deserialize<T>(data);
+        return State;
+    }
+
+    public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        string data;
+
+        if (Profile.AutoEncrypt)
         {
-            using DbConnection connection = _connectionFactory();
-            await connection.OpenAsync(cancellationToken);
-
-            string json = JsonSerializer.Serialize(state, _jsonOptions);
-
-            using DbCommand command = connection.CreateCommand();
-            command.CommandText = $@"
-                MERGE {_tableName} AS target
-                USING (SELECT @Id AS Id, @StateJson AS StateJson) AS source
-                ON target.Id = source.Id
-                WHEN MATCHED THEN 
-                    UPDATE SET StateJson = source.StateJson
-                WHEN NOT MATCHED THEN
-                    INSERT (Id, StateJson) VALUES (source.Id, source.StateJson);";
-
-            DbParameter idParameter = command.CreateParameter();
-            idParameter.ParameterName = "@Id";
-            idParameter.Value = Profile.Id;
-            command.Parameters.Add(idParameter);
-
-            DbParameter stateParam = command.CreateParameter();
-            stateParam.ParameterName = "@StateJson";
-            stateParam.Value = json;
-            command.Parameters.Add(stateParam);
-
-            await command.ExecuteNonQueryAsync(cancellationToken);
+            EncryptState();
+            data = CipherState;
+        }
+        else
+        {
+            data = JsonSerializer.Serialize(state);
         }
 
-        public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
+        await using DbConnection connection = _connectionFactory();
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        await using DbCommand command = connection.CreateCommand();
+        command.CommandText = @"
+MERGE BladeState AS target
+USING (SELECT @InstanceId AS InstanceId, @Data AS Data) AS source
+ON target.InstanceId = source.InstanceId
+WHEN MATCHED THEN UPDATE SET Data = source.Data
+WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, source.Data);";
+
+        DbParameter instanceIdParameter = command.CreateParameter();
+        instanceIdParameter.ParameterName = "@InstanceId";
+        instanceIdParameter.Value = Profile.InstanceId;
+        command.Parameters.Add(instanceIdParameter);
+
+        DbParameter dataParameter = command.CreateParameter();
+        dataParameter.ParameterName = "@Data";
+        dataParameter.Value = data;
+        command.Parameters.Add(dataParameter);
+
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        await using DbConnection connection = _connectionFactory();
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        await using DbCommand command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM BladeState WHERE InstanceId = @InstanceId";
+
+        DbParameter instanceIdParameter = command.CreateParameter();
+        instanceIdParameter.ParameterName = "@InstanceId";
+        instanceIdParameter.Value = Profile.InstanceId;
+        command.Parameters.Add(instanceIdParameter);
+
+        try
         {
-            using DbConnection connection = _connectionFactory();
-            await connection.OpenAsync(cancellationToken);
-
-            using DbCommand command = connection.CreateCommand();
-            command.CommandText = $"DELETE FROM {_tableName} WHERE Id = @Id";
-
-            DbParameter idParameter = command.CreateParameter();
-            idParameter.ParameterName = "@Id";
-            idParameter.Value = Profile.Id;
-            command.Parameters.Add(idParameter);
-
-            await command.ExecuteNonQueryAsync(cancellationToken);
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
+        catch
+        {
+            // swallow or log exceptions
+        }
+
+        CipherState = string.Empty;
+        State = new T();
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        try
+        {
+            await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch
+        {
+            // swallow or log exceptions
+        }
+
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

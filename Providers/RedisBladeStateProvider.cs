@@ -1,3 +1,5 @@
+using BladeState.Cryptography;
+using BladeState.Models;
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Threading;
@@ -5,22 +7,40 @@ using System.Threading.Tasks;
 
 namespace BladeState.Providers;
 
-public class RedisBladeStateProvider<T>(IConnectionMultiplexer redis, string keyPrefix = "BladeState") : BladeStateProvider<T> where T : class, new()
+public class RedisBladeStateProvider<T>(
+	IConnectionMultiplexer redis,
+	BladeStateCryptography bladeStateCryptography,
+	BladeStateProfile bladeStateProfile
+) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
 	private readonly IDatabase _redis = redis.GetDatabase();
-	private readonly string _keyPrefix = keyPrefix;
 
-	private string GetKey() => $"{_keyPrefix}-{Profile.Id}";
+	private string GetKey() => $"{Profile.InstanceName}-{Profile.InstanceId}";
 
 	public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
-		RedisValue value = await _redis.StringGetAsync(GetKey()).ConfigureAwait(false);
 		if (cancellationToken.IsCancellationRequested)
-			return new T();
+		{
+			return State;
+		}
 
-		return value.IsNullOrEmpty
-			 ? new T()
-			 : JsonSerializer.Deserialize<T>(value!) ?? new T();
+		RedisValue redisValue = await _redis.StringGetAsync(GetKey()).ConfigureAwait(false);
+
+		if (redisValue.IsNullOrEmpty)
+		{
+			State = new T();
+			return State;
+		}
+
+		if (Profile.AutoEncrypt)
+		{
+			CipherState = redisValue;
+			DecryptState();
+			return State;
+		}
+
+		State = JsonSerializer.Deserialize<T>(redisValue);
+		return State;
 	}
 
 	public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
@@ -28,8 +48,14 @@ public class RedisBladeStateProvider<T>(IConnectionMultiplexer redis, string key
 		if (cancellationToken.IsCancellationRequested)
 			return;
 
-		string json = JsonSerializer.Serialize(state);
-		await _redis.StringSetAsync(GetKey(), json).ConfigureAwait(false);
+		if (Profile.AutoEncrypt)
+		{
+			EncryptState();
+			await _redis.StringSetAsync(GetKey(), CipherState).ConfigureAwait(false);
+			return;
+		}
+
+		await _redis.StringSetAsync(GetKey(), JsonSerializer.Serialize(state)).ConfigureAwait(false);
 	}
 
 	public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
@@ -38,8 +64,10 @@ public class RedisBladeStateProvider<T>(IConnectionMultiplexer redis, string key
 			return;
 
 		await _redis.KeyDeleteAsync(GetKey()).ConfigureAwait(false);
-	}
 
+		CipherState = string.Empty;
+		State = new T();
+	}
 
 	/// <summary>
 	/// Async disposal hook: cleanup persisted state before disposal.
