@@ -1,4 +1,5 @@
 using BladeState.Cryptography;
+using BladeState.Models;
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Threading;
@@ -8,8 +9,9 @@ namespace BladeState.Providers;
 
 public class RedisBladeStateProvider<T>(
 	IConnectionMultiplexer redis,
-	BladeStateCryptography bladeStateCryptography
-) : BladeStateProvider<T>(bladeStateCryptography) where T : class, new()
+	BladeStateCryptography bladeStateCryptography,
+	BladeStateProfile bladeStateProfile
+) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
 	private readonly IDatabase _redis = redis.GetDatabase();
 

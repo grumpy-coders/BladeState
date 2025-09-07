@@ -10,8 +10,9 @@ namespace BladeState.Providers;
 
 public class EfCoreBladeStateProvider<T>(
     DbContext dbContext,
-    BladeStateCryptography bladeStateCryptography
-) : BladeStateProvider<T>(bladeStateCryptography) where T : class, new()
+    BladeStateCryptography bladeStateCryptography,
+    BladeStateProfile bladeStateProfile
+) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
     private readonly DbContext _dbContext = dbContext;
 

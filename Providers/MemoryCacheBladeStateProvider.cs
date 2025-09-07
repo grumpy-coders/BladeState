@@ -10,8 +10,9 @@ namespace BladeState.Providers;
 
 public class MemoryCacheBladeStateProvider<T>(
     IMemoryCache memoryCache,
-    BladeStateCryptography bladeStateCryptography
-) : BladeStateProvider<T>(bladeStateCryptography) where T : class, new()
+    BladeStateCryptography bladeStateCryptography,
+    BladeStateProfile bladeStateProfile
+) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
     public override Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {

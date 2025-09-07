@@ -10,12 +10,12 @@ namespace BladeState;
 /// <summary>
 /// Defines persistence for a given state type.
 /// </summary>
-public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCryptography) : IAsyncDisposable where T : class, new()
+public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCryptography, BladeStateProfile bladeStateProfile) : IAsyncDisposable where T : class, new()
 {
-	protected readonly BladeStateCryptography BladeStateCryptography = bladeStateCryptography;
+	protected readonly BladeStateCryptography Cryptography = bladeStateCryptography;
+	protected readonly BladeStateProfile Profile = bladeStateProfile;
 	protected T State { get; set; } = new T();
 	protected string CipherState { get; set; } = string.Empty;
-	protected BladeStateProfile Profile { get; set; } = new();
 
 	public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
@@ -61,12 +61,12 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 
 	public virtual void EncryptState()
 	{
-		CipherState = BladeStateCryptography.Encrypt(JsonSerializer.Serialize(State));
+		CipherState = Cryptography.Encrypt(JsonSerializer.Serialize(State));
 	}
 
 	public virtual void DecryptState()
 	{
-		State = JsonSerializer.Deserialize<T>(BladeStateCryptography.Decrypt(CipherState));
+		State = JsonSerializer.Deserialize<T>(Cryptography.Decrypt(CipherState));
 	}
 
 	private bool _disposed;
