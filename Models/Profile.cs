@@ -1,7 +1,7 @@
 using System;
 namespace BladeState.Models;
 
-public class Profile
+public class BladeStateProfile
 {
     /// <summary>
     /// A key used to uniquely identify a Blade State instance's data.
@@ -17,7 +17,7 @@ public class Profile
     /// <summary>
     /// NOT IMPLEMENTED: Times out the instance of Blade State when no data action or access has occurred. 
     /// </summary>
-    public TimeSpan InstanceTimeout { get; set; } = TimeSpan.FromHours(12);
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromHours(12);
 
     /// <summary>
     /// NOT IMPLEMENTED: When the InstanceTimeout has elapsed, Blade State will then save the instance data. Calls SaveStateAsync()

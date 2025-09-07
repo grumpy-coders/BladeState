@@ -1,41 +1,76 @@
+using System;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BladeState.Cryptography;
+using BladeState.Models;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace BladeState.Providers;
 
-public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeStateCryptography bladeStateCryptography)
-    : BladeStateProvider<T>(bladeStateCryptography) where T : class, new()
+public class MemoryCacheBladeStateProvider<T>(
+    IMemoryCache memoryCache,
+    BladeStateCryptography bladeStateCryptography
+) : BladeStateProvider<T>(bladeStateCryptography) where T : class, new()
 {
     public override Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
+            return Task.FromResult(State);
+
+        try
         {
-            return Task.FromResult(new T());
+            if (memoryCache.TryGetValue(Profile.InstanceId, out string data))
+            {
+                if (Profile.AutoEncrypt)
+                {
+                    CipherState = data;
+                    DecryptState();
+                    return Task.FromResult(State);
+                }
+
+                State = JsonSerializer.Deserialize<T>(data);
+                return Task.FromResult(State);
+            }
+        }
+        catch
+        {
+            State = new T();
+            return Task.FromResult(State);
         }
 
-        if (memoryCache.TryGetValue(Profile.InstanceId, out T state))
-        {
-            return Task.FromResult(state ?? new T());
-        }
-        else
-        {
-            return Task.FromResult(new T());
-        }
+        State = new T();
+        return Task.FromResult(State);
     }
 
     public override Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
-        {
             return Task.CompletedTask;
-        }
 
-        memoryCache.Set(Profile.InstanceId, state, new MemoryCacheEntryOptions
+        string data;
+
+        try
         {
-            SlidingExpiration = Profile.InstanceTimeout
-        });
+            if (Profile.AutoEncrypt)
+            {
+                EncryptState();
+                data = CipherState;
+            }
+            else
+            {
+                data = JsonSerializer.Serialize(state);
+            }
+
+            memoryCache.Set(Profile.InstanceId, data, new MemoryCacheEntryOptions
+            {
+                SlidingExpiration = Profile.Timeout
+            });
+        }
+        catch
+        {
+            // swallow or log serialization/encryption failures
+        }
 
         return Task.CompletedTask;
     }
@@ -43,11 +78,20 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
     public override Task ClearStateAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
-        {
             return Task.CompletedTask;
+
+        try
+        {
+            memoryCache.Remove(Profile.InstanceId);
+        }
+        catch
+        {
+            // swallow/log
         }
 
-        memoryCache.Remove(Profile.InstanceId);
+        CipherState = string.Empty;
+        State = new T();
+
         return Task.CompletedTask;
     }
 
@@ -62,10 +106,9 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
         }
         catch
         {
-            // swallow or log exceptions, since Dispose must not throw
+            // swallow/log exceptions, since Dispose must not throw
         }
 
         await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }
-
