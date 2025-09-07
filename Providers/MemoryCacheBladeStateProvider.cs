@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using BladeState.Cryptography;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace BladeState.Providers;
 
-public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache) : BladeStateProvider<T> where T : class, new()
+public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeStateCryptography bladeStateCryptography)
+    : BladeStateProvider<T>(bladeStateCryptography) where T : class, new()
 {
     public override Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
@@ -15,7 +15,7 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache) : BladeS
             return Task.FromResult(new T());
         }
 
-        if (memoryCache.TryGetValue(Profile.Id, out T state))
+        if (memoryCache.TryGetValue(Profile.InstanceId, out T state))
         {
             return Task.FromResult(state ?? new T());
         }
@@ -32,9 +32,9 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache) : BladeS
             return Task.CompletedTask;
         }
 
-        memoryCache.Set(Profile.Id, state, new MemoryCacheEntryOptions
+        memoryCache.Set(Profile.InstanceId, state, new MemoryCacheEntryOptions
         {
-            SlidingExpiration = Profile.SessionTimeout
+            SlidingExpiration = Profile.InstanceTimeout
         });
 
         return Task.CompletedTask;
@@ -47,7 +47,7 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache) : BladeS
             return Task.CompletedTask;
         }
 
-        memoryCache.Remove(Profile.Id);
+        memoryCache.Remove(Profile.InstanceId);
         return Task.CompletedTask;
     }
 

@@ -1,67 +1,77 @@
 using System;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using BladeState.Cryptography;
+using BladeState.Models;
 
 namespace BladeState;
 
 /// <summary>
 /// Defines persistence for a given state type.
 /// </summary>
-public abstract class BladeStateProvider<T> : IAsyncDisposable where T : class, new()
+public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCryptography) : IAsyncDisposable where T : class, new()
 {
-	public T State { get; set; } = new T();
+    protected readonly BladeStateCryptography BladeStateCryptography = bladeStateCryptography;
+    protected T State { get; set; } = new T();
+	protected string CipherState { get; set; } = string.Empty;
+    protected Profile Profile { get; set; } = new();
 
-	public Profile Profile { get; set; } = new();
+    public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromResult(State);
 
-	public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
-	{
-		if (cancellationToken.IsCancellationRequested)
-			return Task.FromResult(State); // get whatever the current value is. unsure of consequences here :P
+        return Task.FromResult(State ?? new T());
+    }
 
-		return Task.FromResult(State ?? new T());
-	}
+    public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromCanceled(cancellationToken);
 
-	public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
-	{
-		if (cancellationToken.IsCancellationRequested)
-			return Task.FromCanceled(cancellationToken);
+        State = state;
 
-		State = state;
+		if (AutoEncrypt)
+		{
+			EncryptState();
+		}
+
 		return Task.CompletedTask;
-	}
+    }
 
-	public virtual Task ClearStateAsync(CancellationToken cancellationToken = default)
-	{
-		if (cancellationToken.IsCancellationRequested)
-			return Task.FromCanceled(cancellationToken);
+    public virtual Task ClearStateAsync(CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromCanceled(cancellationToken);
 
 		State = new T();
-		return Task.CompletedTask;
-	}
+		CipherState = string.Empty;
 
-	private bool _disposed;
+        return Task.CompletedTask;
+    }
 
-	public async ValueTask DisposeAsync()
-	{
-		if (!_disposed)
-		{
-			// Let subclasses override async cleanup
-			await DisposeAsyncCore();
+    public virtual void EncryptState()
+    {
+        CipherState = BladeStateCryptography.Encrypt(JsonSerializer.Serialize(State));
+    }
 
-			// suppress finalizer
-			GC.SuppressFinalize(this);
-			_disposed = true;
-		}
-	}
+    public virtual void DecryptState()
+    {
+        State = JsonSerializer.Deserialize<T>(BladeStateCryptography.Decrypt(CipherState));        
+    }
 
-	/// <summary>
-	/// Subclasses override this to dispose async resources
-	/// (e.g., DbContext.DisposeAsync, Redis connection, etc.)
-	/// </summary>
-	protected virtual ValueTask DisposeAsyncCore()
-	{
-		// Default: nothing async to dispose
-		return ValueTask.CompletedTask;
-	}
+    private bool _disposed;
 
+    public async ValueTask DisposeAsync()
+    {
+        if (!_disposed)
+        {
+            await DisposeAsyncCore();
+            GC.SuppressFinalize(this);
+            _disposed = true;
+        }
+    }
+
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
 }
