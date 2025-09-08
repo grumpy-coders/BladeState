@@ -56,7 +56,7 @@ public class SqlBladeStateProvider<T>(
         if (Profile.AutoEncrypt)
         {
             CipherState = data;
-            DecryptState(cancellationToken);
+            await DecryptStateAsync(cancellationToken);
             return State;
         }
 
@@ -73,7 +73,7 @@ public class SqlBladeStateProvider<T>(
 
         if (Profile.AutoEncrypt)
         {
-            EncryptState(cancellationToken);
+            await EncryptStateAsync(cancellationToken);
             data = CipherState;
         }
         else
@@ -108,6 +108,8 @@ WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, sourc
         command.Parameters.Add(dataParameter);
 
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+        await StartTimeoutTaskAsync(cancellationToken);
     }
 
     public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
@@ -137,6 +139,8 @@ WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, sourc
 
         CipherState = string.Empty;
         State = new T();
+
+        await StartTimeoutTaskAsync(cancellationToken);
     }
 
     protected override async ValueTask DisposeAsyncCore()

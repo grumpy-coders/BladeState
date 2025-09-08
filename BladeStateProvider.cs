@@ -18,52 +18,50 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	protected T State { get; set; } = new T();
 	protected string CipherState { get; set; } = string.Empty;
 
-	private DateTime _lastLoadTime;
-	private CancellationTokenSource _timeoutCancellationTokenSource = new CancellationTokenSource();
+	protected DateTime LastAccessTime;
+	private CancellationTokenSource _timeoutCancellationTokenSource = new();
 	private Task _timeoutTask;
-	private readonly SemaphoreSlim _timeoutLock = new SemaphoreSlim(1, 1);
+	private readonly SemaphoreSlim _timeoutLock = new(1, 1);
 	private bool _disposed;
 
 	public virtual async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
 			return State;
+
 		try
 		{
 			if (Profile.AutoEncrypt)
-				DecryptState(cancellationToken);
+				await DecryptStateAsync(cancellationToken);
 		}
 		catch
 		{
 			State = new T();
 		}
-		_lastLoadTime = DateTime.UtcNow;
 
 		await StartTimeoutTaskAsync(cancellationToken);
-
 		return State;
 	}
 
-	public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+	public virtual async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
-			return Task.FromCanceled(cancellationToken);
+			return;
 
 		State = state;
 
 		try
 		{
 			if (Profile.AutoEncrypt)
-				EncryptState(cancellationToken);
+				await EncryptStateAsync(cancellationToken);
 		}
 		catch
 		{
-
+			// swallow encryption errors
 		}
 
-		return Task.CompletedTask;
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
-
 
 	public virtual async Task ClearStateAsync(CancellationToken cancellationToken = default)
 	{
@@ -73,10 +71,10 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		State = new T();
 		CipherState = string.Empty;
 
-		await Task.CompletedTask;
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
 
-	public virtual void EncryptState(CancellationToken cancellationToken = default)
+	public virtual async Task EncryptStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
 			return;
@@ -89,9 +87,11 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		{
 			CipherState = string.Empty;
 		}
+
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
 
-	public virtual void DecryptState(CancellationToken cancellationToken = default)
+	public virtual async Task DecryptStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
 			return;
@@ -104,28 +104,30 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		{
 			State = new T();
 		}
+
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
 
 	protected async Task StartTimeoutTaskAsync(CancellationToken cancellationToken = default)
 	{
+		LastAccessTime = DateTime.UtcNow;
+
 		await _timeoutLock.WaitAsync(cancellationToken);
 		try
 		{
-			// Cancel and dispose previous timeout CancellationTokenSource
 			_timeoutCancellationTokenSource.Cancel();
 			_timeoutCancellationTokenSource.Dispose();
 			_timeoutCancellationTokenSource = new CancellationTokenSource();
 
-			// Combine internal CancellationTokenSource (for resets) with external token
-			using CancellationTokenSource linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_timeoutCancellationTokenSource.Token, cancellationToken);
-            CancellationToken token = linkedCancellationTokenSource.Token;
+			using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_timeoutCancellationTokenSource.Token, cancellationToken);
+			var token = linkedCts.Token;
 
 			_timeoutTask = Task.Run(async () =>
 			{
 				try
 				{
 					TimeSpan delay = Profile.InstanceTimeout;
-					TimeSpan elapsed = DateTime.UtcNow - _lastLoadTime;
+					TimeSpan elapsed = DateTime.UtcNow - LastAccessTime;
 					TimeSpan remaining = delay - elapsed;
 
 					if (remaining > TimeSpan.Zero)
@@ -153,12 +155,11 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 			if (Profile.SaveOnInstanceTimeout)
 				await SaveStateAsync(State);
 
-			await ClearStateAsync();
 			await DisposeAsync();
 		}
 		catch
 		{
-			await DisposeAsync(); //force disposal, even if save or clear fails (same concept of leaving toys on the floor and mom vacuums them up :P)
+			await DisposeAsync(); // force disposal no matter what
 		}
 	}
 

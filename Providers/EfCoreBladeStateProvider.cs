@@ -40,7 +40,7 @@ public class EfCoreBladeStateProvider<T>(
         if (Profile.AutoEncrypt)
         {
             CipherState = entity.StateData;
-            DecryptState(cancellationToken);
+            await DecryptStateAsync(cancellationToken);
             return State;
         }
 
@@ -57,7 +57,7 @@ public class EfCoreBladeStateProvider<T>(
 
         if (Profile.AutoEncrypt)
         {
-            EncryptState(cancellationToken);
+            await EncryptStateAsync(cancellationToken);
             data = CipherState;
         }
         else
@@ -84,6 +84,8 @@ public class EfCoreBladeStateProvider<T>(
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        await StartTimeoutTaskAsync(cancellationToken);
     }
 
     public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
@@ -108,6 +110,8 @@ public class EfCoreBladeStateProvider<T>(
 
         CipherState = string.Empty;
         State = new T();
+
+        await StartTimeoutTaskAsync(cancellationToken);
     }
 
     /// <summary>

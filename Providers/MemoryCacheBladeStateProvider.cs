@@ -28,7 +28,7 @@ public class MemoryCacheBladeStateProvider<T>(
                 if (Profile.AutoEncrypt)
                 {
                     CipherState = data;
-                    DecryptState(cancellationToken);
+                    await DecryptStateAsync(cancellationToken);
                     return State;
                 }
 
@@ -46,10 +46,10 @@ public class MemoryCacheBladeStateProvider<T>(
         return State;
     }
 
-    public override Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+    public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
-            return Task.CompletedTask;
+            return;
 
         string data;
 
@@ -57,7 +57,7 @@ public class MemoryCacheBladeStateProvider<T>(
         {
             if (Profile.AutoEncrypt)
             {
-                EncryptState(cancellationToken);
+                await EncryptStateAsync(cancellationToken);
                 data = CipherState;
             }
             else
@@ -75,13 +75,13 @@ public class MemoryCacheBladeStateProvider<T>(
             // swallow or log serialization/encryption failures
         }
 
-        return Task.CompletedTask;
+        await StartTimeoutTaskAsync(cancellationToken);
     }
 
-    public override Task ClearStateAsync(CancellationToken cancellationToken = default)
+    public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
-            return Task.CompletedTask;
+            return;
 
         try
         {
@@ -95,7 +95,7 @@ public class MemoryCacheBladeStateProvider<T>(
         CipherState = string.Empty;
         State = new T();
 
-        return Task.CompletedTask;
+        await StartTimeoutTaskAsync(cancellationToken);
     }
 
     /// <summary>

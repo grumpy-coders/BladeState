@@ -37,7 +37,7 @@ public class RedisBladeStateProvider<T>(
 		if (Profile.AutoEncrypt)
 		{
 			CipherState = redisValue;
-			DecryptState(cancellationToken);
+			await DecryptStateAsync(cancellationToken);
 			return State;
 		}
 
@@ -52,12 +52,14 @@ public class RedisBladeStateProvider<T>(
 
 		if (Profile.AutoEncrypt)
 		{
-			EncryptState(cancellationToken);
+			await EncryptStateAsync(cancellationToken);
 			await _redis.StringSetAsync(GetKey(), CipherState).ConfigureAwait(false);
 			return;
 		}
 
 		await _redis.StringSetAsync(GetKey(), JsonSerializer.Serialize(state)).ConfigureAwait(false);
+
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
 
 	public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
@@ -69,6 +71,8 @@ public class RedisBladeStateProvider<T>(
 
 		CipherState = string.Empty;
 		State = new T();
+
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
 
 	/// <summary>
