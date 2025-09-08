@@ -40,9 +40,6 @@ jobs:
           </configuration>
           EOF
 
-      - name: Show sources (debug)
-        run: dotnet nuget list source
-
       - name: Push package(s) to NuGet.org
         run: |
           for pkg in out/*.nupkg; do
