@@ -31,12 +31,13 @@ jobs:
       - name: Create NuGet package
         run: dotnet pack --configuration Release --no-build -o out
 
-      # Publish to NuGet
+      # Add NuGet.org as a source
+      - name: Add NuGet.org source
+        run: dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org
+
+      # Publish to NuGet.org
       - name: Publish to NuGet
         run: dotnet nuget push "out/*.nupkg" \
-          --api-key ${{ secrets.BLADE_STATE_NUGET_API_KEY }} \
-          --source nuget.org \
-          --skip-duplicate
-
-          
-
+              --api-key ${{ secrets.BLADE_STATE_NUGET_API_KEY }} \
+              --source nuget.org \
+              --skip-duplicate
