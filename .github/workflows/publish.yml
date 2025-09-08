@@ -27,26 +27,13 @@ jobs:
       - name: Verify package(s)
         run: ls -al out
 
-      # Create a clean config so push can't "lose" nuget.org
-      - name: Create minimal NuGet.config for push
-        run: |
-          cat > NuGet.Push.config <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <configuration>
-            <packageSources>
-              <clear />
-              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-            </packageSources>
-          </configuration>
-          EOF
-
       - name: Push package(s) to NuGet.org
         run: |
           for pkg in out/*.nupkg; do
             echo "Pushing $pkg"
             dotnet nuget push "$pkg" \
               --api-key "${{ secrets.BLADE_STATE_NUGET_API_KEY }}" \
-              --s "nuget.org" \
+              -s "nuget.org" \
               --configfile NuGet.Push.config \
               --skip-duplicate \
               --force-english-output \
