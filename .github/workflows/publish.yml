@@ -49,7 +49,7 @@ jobs:
             echo "Pushing $pkg"
             dotnet nuget push "$pkg" \
               --api-key "${{ secrets.BLADE_STATE_NUGET_API_KEY }}" \
-              --source "nuget.org" \
+              --s "nuget.org" \
               --configfile NuGet.Push.config \
               --skip-duplicate \
               --force-english-output \
