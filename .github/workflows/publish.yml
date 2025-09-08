@@ -36,5 +36,5 @@ jobs:
               -s "nuget.org" \
               --configfile NuGet.Push.config \
               --skip-duplicate \
-              --force-english-output \
+              --force-english-output
           done
