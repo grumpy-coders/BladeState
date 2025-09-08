@@ -40,10 +40,6 @@ jobs:
           </configuration>
           EOF
 
-      # (Optional) also register a named source, for clarity/debug
-      - name: Add nuget.org as a source
-        run: dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org
-
       - name: Show sources (debug)
         run: dotnet nuget list source
 
