@@ -21,6 +21,7 @@ public class EfCoreBladeStateProvider<T>(
         if (cancellationToken.IsCancellationRequested)
             return State;
 
+        await StartTimeoutTaskAsync(cancellationToken);
 
         BladeStateEntity entity;
 
@@ -39,7 +40,7 @@ public class EfCoreBladeStateProvider<T>(
         if (Profile.AutoEncrypt)
         {
             CipherState = entity.StateData;
-            DecryptState();
+            DecryptState(cancellationToken);
             return State;
         }
 
@@ -56,7 +57,7 @@ public class EfCoreBladeStateProvider<T>(
 
         if (Profile.AutoEncrypt)
         {
-            EncryptState();
+            EncryptState(cancellationToken);
             data = CipherState;
         }
         else

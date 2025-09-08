@@ -23,6 +23,8 @@ public class SqlBladeStateProvider<T>(
         if (cancellationToken.IsCancellationRequested)
             return State;
 
+        await StartTimeoutTaskAsync(cancellationToken);
+
         await using DbConnection connection = _connectionFactory();
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
@@ -54,7 +56,7 @@ public class SqlBladeStateProvider<T>(
         if (Profile.AutoEncrypt)
         {
             CipherState = data;
-            DecryptState();
+            DecryptState(cancellationToken);
             return State;
         }
 
@@ -71,7 +73,7 @@ public class SqlBladeStateProvider<T>(
 
         if (Profile.AutoEncrypt)
         {
-            EncryptState();
+            EncryptState(cancellationToken);
             data = CipherState;
         }
         else

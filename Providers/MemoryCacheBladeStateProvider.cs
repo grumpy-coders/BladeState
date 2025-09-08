@@ -14,10 +14,12 @@ public class MemoryCacheBladeStateProvider<T>(
     BladeStateProfile bladeStateProfile
 ) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
-    public override Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
+    public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
-            return Task.FromResult(State);
+            return State;
+
+        await StartTimeoutTaskAsync(cancellationToken);
 
         try
         {
@@ -26,22 +28,22 @@ public class MemoryCacheBladeStateProvider<T>(
                 if (Profile.AutoEncrypt)
                 {
                     CipherState = data;
-                    DecryptState();
-                    return Task.FromResult(State);
+                    DecryptState(cancellationToken);
+                    return State;
                 }
 
                 State = JsonSerializer.Deserialize<T>(data);
-                return Task.FromResult(State);
+                return State;
             }
         }
         catch
         {
             State = new T();
-            return Task.FromResult(State);
+            return State;
         }
 
         State = new T();
-        return Task.FromResult(State);
+        return State;
     }
 
     public override Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
@@ -55,7 +57,7 @@ public class MemoryCacheBladeStateProvider<T>(
         {
             if (Profile.AutoEncrypt)
             {
-                EncryptState();
+                EncryptState(cancellationToken);
                 data = CipherState;
             }
             else
