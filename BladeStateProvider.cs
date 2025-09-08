@@ -8,73 +8,179 @@ using BladeState.Models;
 namespace BladeState;
 
 /// <summary>
-/// Defines persistence for a given state type.
+/// Defines persistence for a given state type with async timeout handling.
 /// </summary>
-public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCryptography, BladeStateProfile bladeStateProfile) : IAsyncDisposable where T : class, new()
+public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCryptography, BladeStateProfile bladeStateProfile)
+	: IAsyncDisposable where T : class, new()
 {
 	protected readonly BladeStateCryptography Cryptography = bladeStateCryptography;
 	protected readonly BladeStateProfile Profile = bladeStateProfile;
 	protected T State { get; set; } = new T();
 	protected string CipherState { get; set; } = string.Empty;
 
-	public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
+	protected DateTime LastAccessTime;
+	private CancellationTokenSource _timeoutCancellationTokenSource = new();
+	private Task _timeoutTask;
+	private readonly SemaphoreSlim _timeoutLock = new(1, 1);
+	private bool _disposed;
+
+	public virtual async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
+			return State;
+
+		try
 		{
-			return Task.FromResult(State);
+			if (Profile.AutoEncrypt)
+				await DecryptStateAsync(cancellationToken);
+		}
+		catch
+		{
+			State = new T();
 		}
 
-		if (Profile.AutoEncrypt)
-		{
-			DecryptState();
-			return Task.FromResult(State);
-		}
-
-		return Task.FromResult(State ?? new T());
+		await StartTimeoutTaskAsync(cancellationToken);
+		return State;
 	}
 
-	public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+	public virtual async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
-			return Task.FromCanceled(cancellationToken);
+			return;
 
 		State = state;
 
-		if (Profile.AutoEncrypt)
+		try
 		{
-			EncryptState();
+			if (Profile.AutoEncrypt)
+				await EncryptStateAsync(cancellationToken);
+		}
+		catch
+		{
+			// swallow encryption errors
 		}
 
-		return Task.CompletedTask;
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
 
-	public virtual Task ClearStateAsync(CancellationToken cancellationToken = default)
+	public virtual async Task ClearStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
-			return Task.FromCanceled(cancellationToken);
+			return;
 
 		State = new T();
 		CipherState = string.Empty;
 
-		return Task.CompletedTask;
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
 
-	public virtual void EncryptState()
+	public virtual async Task EncryptStateAsync(CancellationToken cancellationToken = default)
 	{
-		CipherState = Cryptography.Encrypt(JsonSerializer.Serialize(State));
+		if (cancellationToken.IsCancellationRequested)
+			return;
+
+		try
+		{
+			CipherState = Cryptography.Encrypt(JsonSerializer.Serialize(State));
+		}
+		catch
+		{
+			CipherState = string.Empty;
+		}
+
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
 
-	public virtual void DecryptState()
+	public virtual async Task DecryptStateAsync(CancellationToken cancellationToken = default)
 	{
-		State = JsonSerializer.Deserialize<T>(Cryptography.Decrypt(CipherState));
+		if (cancellationToken.IsCancellationRequested)
+			return;
+
+		try
+		{
+			State = JsonSerializer.Deserialize<T>(Cryptography.Decrypt(CipherState)) ?? new T();
+		}
+		catch
+		{
+			State = new T();
+		}
+
+		await StartTimeoutTaskAsync(cancellationToken);
 	}
 
-	private bool _disposed;
+	protected async Task StartTimeoutTaskAsync(CancellationToken cancellationToken = default)
+	{
+		LastAccessTime = DateTime.UtcNow;
+
+		await _timeoutLock.WaitAsync(cancellationToken);
+		try
+		{
+			_timeoutCancellationTokenSource.Cancel();
+			_timeoutCancellationTokenSource.Dispose();
+			_timeoutCancellationTokenSource = new CancellationTokenSource();
+
+			using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_timeoutCancellationTokenSource.Token, cancellationToken);
+			var token = linkedCts.Token;
+
+			_timeoutTask = Task.Run(async () =>
+			{
+				try
+				{
+					TimeSpan delay = Profile.InstanceTimeout;
+					TimeSpan elapsed = DateTime.UtcNow - LastAccessTime;
+					TimeSpan remaining = delay - elapsed;
+
+					if (remaining > TimeSpan.Zero)
+						await Task.Delay(remaining, token);
+
+					if (!token.IsCancellationRequested)
+						await TimeoutAsync();
+				}
+				catch (TaskCanceledException)
+				{
+					// Ignore cancellation
+				}
+			}, token);
+		}
+		finally
+		{
+			_timeoutLock.Release();
+		}
+	}
+
+	public virtual async Task TimeoutAsync()
+	{
+		try
+		{
+			if (Profile.SaveOnInstanceTimeout)
+				await SaveStateAsync(State);
+
+			await DisposeAsync();
+		}
+		catch
+		{
+			await DisposeAsync(); // force disposal no matter what
+		}
+	}
 
 	public async ValueTask DisposeAsync()
 	{
 		if (!_disposed)
 		{
+			await _timeoutLock.WaitAsync();
+			try
+			{
+				_timeoutCancellationTokenSource.Cancel();
+				_timeoutCancellationTokenSource.Dispose();
+			}
+			finally
+			{
+				_timeoutLock.Release();
+			}
+
+			if (_timeoutTask != null)
+				await _timeoutTask;
+
 			await DisposeAsyncCore();
 			GC.SuppressFinalize(this);
 			_disposed = true;

@@ -15,12 +15,12 @@ public class BladeStateProfile
     public string InstanceName { get; set; } = "BladeState";
 
     /// <summary>
-    /// NOT IMPLEMENTED: Times out the instance of Blade State when no data action or access has occurred. 
+    /// Times out the instance of Blade State when no data action or access has occurred. 
     /// </summary>
     public TimeSpan InstanceTimeout { get; set; } = TimeSpan.FromHours(12);
 
     /// <summary>
-    /// NOT IMPLEMENTED: When the InstanceTimeout has elapsed, Blade State will then save the instance data. Calls SaveStateAsync()
+    /// When the InstanceTimeout has elapsed, Blade State will then save the instance data. Calls SaveStateAsync()
     /// </summary>
     public bool SaveOnInstanceTimeout { get; set; }
 
