@@ -240,28 +240,35 @@ BladeState automatically encrypts persisted state data using AES encryption.
 
 Enabled by default – you don’t need to do anything.
 
-Encryption key – if not provided, BladeState will generate one automatically, simplifying encryption and decryption without explicit wire-up.
-You may also supply your own key, example below
+Encryption key – if not provided, BladeState will generate one automatically, simplifying encryption and decryption without explicit wire-up.  
+You may also supply your own key by configuring a `BladeStateProfile`, example below:
 
-``` csharp
+```csharp
+var profile = new BladeStateProfile
+{
+    AutoEncrypt = true,              // enable encryption
+    EncryptionKey = "my-crypto-key"  // optional custom key
+};
 
-builder.Services.AddBladeState<MyAppState, SqlBladeStateProvider<MyAppState>>(
-    useEncryption: true,
-    encryptionKey: "my-custom-key" // Your key supplied as a string value
-);
-
+builder.Services.AddBladeState<MyAppState, SqlBladeStateProvider<MyAppState>>(profile);
 ```
 
-Optionally (and highly NOT recommended for Production 😁):
-You may turn off encryption – you can explicitly disable encryption if needed for testing purposes.
+Optionally (and NOT to be used for Production Environments - the universe frowns heavily upon that action 😔):
+You may turn off encryption – you can explicitly disable it via **AutoEncrypt** in your profile:
 
-``` csharp
+This is not necessary even when wiring up your own BladeStateProvider.
+The Decrypt/Encrypt State methods should be explicitly used.
 
-builder.Services.AddBladeState<MyAppState, RedisBladeStateProvider<MyAppState>>(
-    useEncryption: false
-);
+```csharp
+var profile = new BladeStateProfile
+{
+    AutoEncrypt = false  // disables automatic crypto transforms in the 'out of the box' providers
+};
 
+builder.Services.AddBladeState<MyAppState, RedisBladeStateProvider<MyAppState>>(profile);
 ```
+
+
 
 ## 📝 License
 
