@@ -32,10 +32,9 @@ jobs:
           for pkg in out/*.nupkg; do
             echo "Pushing $pkg"
             dotnet nuget push "$pkg" \
-              --api-key "${{ secrets.BLADE_STATE_NUGET_API_KEY }}" \
+              -k "${{ secrets.BLADE_STATE_NUGET_API_KEY }}" \
               -s "nuget.org" \
               --configfile NuGet.Push.config \
               --skip-duplicate \
               --force-english-output \
-              --verbosity detailed
           done
