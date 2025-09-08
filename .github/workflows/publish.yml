@@ -35,5 +35,5 @@ jobs:
       - name: Publish to NuGet
         run: dotnet nuget push "out/*.nupkg" \
               --api-key ${{ secrets.BLADE_STATE_NUGET_API_KEY }} \
-              --source "nuget.org" \
+              --source "https://api.nuget.org/v3/index.json" \
               --skip-duplicate
