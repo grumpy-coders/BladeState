@@ -2,38 +2,60 @@ name: Publish to NuGet
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout code
       - uses: actions/checkout@v4
 
-      # Setup .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0'
+          dotnet-version: 9.0.0
 
-      # Restore dependencies
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Restore
+        run: dotnet restore --nologo
 
-      # Build
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build -c Release --no-restore --nologo
 
-      # Package
-      - name: Create NuGet package
-        run: dotnet pack --configuration Release --no-build -o out
-      
-      # Publish to NuGet.org
-      - name: Publish to NuGet
-        run: dotnet nuget push "out/*.nupkg" \
-              --api-key ${{ secrets.BLADE_STATE_NUGET_API_KEY }} \
-              --source nuget.org \
-              --skip-duplicate
+      - name: Pack
+        run: dotnet pack -c Release --no-build -o out --nologo
+
+      - name: Verify package(s)
+        run: ls -al out
+
+      # Create a clean config so push can't "lose" nuget.org
+      - name: Create minimal NuGet.config for push
+        run: |
+          cat > NuGet.Push.config <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+          </configuration>
+          EOF
+
+      # (Optional) also register a named source, for clarity/debug
+      - name: Add nuget.org as a source
+        run: dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org
+
+      - name: Show sources (debug)
+        run: dotnet nuget list source
+
+      - name: Push package(s) to NuGet.org
+        run: |
+          for pkg in out/*.nupkg; do
+            echo "Pushing $pkg"
+            dotnet nuget push "$pkg" \
+              --api-key "${{ secrets.BLADE_STATE_NUGET_API_KEY }}" \
+              --source "nuget.org" \
+              --configfile NuGet.Push.config \
+              --skip-duplicate \
+              --force-english-output \
+              --verbosity detailed
+          done
