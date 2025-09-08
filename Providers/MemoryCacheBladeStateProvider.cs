@@ -65,7 +65,7 @@ public class MemoryCacheBladeStateProvider<T>(
 
             memoryCache.Set(Profile.InstanceId, data, new MemoryCacheEntryOptions
             {
-                SlidingExpiration = Profile.Timeout
+                SlidingExpiration = Profile.InstanceTimeout
             });
         }
         catch

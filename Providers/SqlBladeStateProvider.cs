@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BladeState.Cryptography;
@@ -22,21 +23,26 @@ public class SqlBladeStateProvider<T>(
         if (cancellationToken.IsCancellationRequested)
             return State;
 
-        await using DbConnection conn = _connectionFactory();
-        await conn.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using DbConnection connection = _connectionFactory();
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-        await using DbCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT TOP 1 Data FROM BladeState WHERE InstanceId = @InstanceId";
-        DbParameter param = cmd.CreateParameter();
-        param.ParameterName = "@InstanceId";
-        param.Value = Profile.InstanceId;
-        cmd.Parameters.Add(param);
+        if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
+        {
+            throw new InvalidOperationException("The instance name is invalid");
+        }
+
+        await using DbCommand command = connection.CreateCommand();
+        command.CommandText = $"SELECT TOP 1 Data FROM [{Profile.InstanceName}] WHERE InstanceId = @InstanceId";
+        DbParameter instanceIdParameter = command.CreateParameter();
+        instanceIdParameter.ParameterName = "@InstanceId";
+        instanceIdParameter.Value = Profile.InstanceId;
+        command.Parameters.Add(instanceIdParameter);
 
         string data;
 
         try
         {
-            object result = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            object result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
             data = (string)result;
         }
         catch
@@ -76,9 +82,14 @@ public class SqlBladeStateProvider<T>(
         await using DbConnection connection = _connectionFactory();
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+        if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
+        {
+            throw new InvalidOperationException("The instance name is invalid");
+        }
+
         await using DbCommand command = connection.CreateCommand();
-        command.CommandText = @"
-MERGE BladeState AS target
+        command.CommandText = $@"
+MERGE [{Profile.InstanceName}] AS target
 USING (SELECT @InstanceId AS InstanceId, @Data AS Data) AS source
 ON target.InstanceId = source.InstanceId
 WHEN MATCHED THEN UPDATE SET Data = source.Data

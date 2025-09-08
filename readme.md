@@ -4,7 +4,7 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![License](https://img.shields.io/github/license/doomfaller/BladeState.svg?style=flat)](LICENSE)
 
-**BladeState** is a lightweight server-side state/session persistence library for Razor and Blazor applications.
+**BladeState** is a lightweight server-side dependency injection state persistence library for .NET applications.
 It provides **dependency-injected storage** for persisting state across requests without relying on `HttpContext.Session`.
 
 ---
@@ -34,6 +34,16 @@ BladeState includes multiple built-in providers for persisting state:
 
 ### 1. Memory Cache Provider (`MemoryCacheBladeStateProvider<T>`) ⚡
 
+Stores state in in-memory cache for the lifetime of the application.
+
+``` csharp
+using BladeState;
+using BladeState.Models;
+using BladeState.Providers;
+
+builder.Services.AddBladeState<MyState, MemoryCacheBladeStateProvider<MyState>>();
+```
+
 ### 2. SQL Provider (`SqlBladeStateProvider<T>`) 📃
 
 The SQL provider stores state in a relational database table using JSON serialization.
@@ -42,19 +52,9 @@ The SQL provider stores state in a relational database table using JSON serializ
 
 ```sql
 CREATE TABLE BladeState (
-    Id NVARCHAR(256) PRIMARY KEY,
-    StateJson NVARCHAR(MAX) NOT NULL
+    InstanceId NVARCHAR(256) PRIMARY KEY,
+    [Data] NVARCHAR(MAX) NOT NULL
 );
-```
-
-#### Setup via `appsettings.json`
-
-```json
-{
-  "ConnectionStrings": {
-    "BladeState": "Server=localhost;Database=BladeStateDb;User Id=sa;Password=yourStrong(!)Password;TrustServerCertificate=True;"
-  }
-}
 ```
 
 #### Registration
@@ -63,18 +63,21 @@ CREATE TABLE BladeState (
 using Microsoft.Data.SqlClient;
 using BladeState.Providers;
 
-builder.Services.AddBladeState<MyState, SqlBladeStateProvider<MyState>>();
+builder.Services.AddBladeState<MyState, SqlBladeStateProvider<MyState>>(
+    () => new SqlConnection("Server=localhost;Database=BladeStateDb;User Id=yourUserId;Password=YourStrong(!)Password;TrustServerCertificate=True;"))
+    (
+        new BladeStateProfile
+        {
+            InstanceName = "MyBladeStateTable"
+            EncryptionKey = "my-crypto-key"
+        }
+    );
 
-builder.Services.AddSingleton(sp => new SqlBladeStateProvider<MyState>(
-    () => new SqlConnection(builder.Configuration.GetConnectionString("BladeState")),
-    tableName: "BladeState",   // optional, defaults to "BladeState"
-    stateId: "CustomStateId"   // optional, defaults to typeof(T).Name
-));
 ```
 
 #### How it works
 
-* Uses a simple key/value table (`Id`, `StateJson`).
+* Uses a simple key/value table (`InstanceId`, `Data`).
 * JSON serialization handled automatically.
 
 ---
@@ -93,12 +96,18 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect("localhost")
 );
 
-builder.Services.AddBladeState<MyState, RedisBladeStateProvider<MyState>>();
+builder.Services.AddBladeState<MyState, RedisBladeStateProvider<MyState>>(
+    new BladeStateProfile
+    {
+        InstanceName = "MyAppUsingRedis" //If InstanceName is not provided the value will be 'BladeState'
+    }
+);
+
 ```
 
 #### Notes
 
-* Stores JSON under a Redis key like `BladeState-{Profile.Id}`.
+* Stores JSON under a Redis key formatted like `{BladeStateProfile.InstanceName}-{BladeStateProfile.InstanceId}`.
 * Fast, distributed, great for scale-out.
 
 ---
@@ -114,9 +123,15 @@ using BladeState.Providers;
 using Microsoft.EntityFrameworkCore;
 
 builder.Services.AddDbContext<MyDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("BladeState")));
+    options.UseSqlServer("Server=localhost;Database=BladeStateDb;User Id=sa;Password=YourStrong(!)Password;TrustServerCertificate=True;"));
 
-builder.Services.AddBladeState<MyState, EfCoreBladeStateProvider<MyState>>();
+builder.Services.AddBladeState<MyState, EfCoreBladeStateProvider<MyState>>(
+    new BladeStateProfile
+    {
+        InstanceName = "MyEfCoreState",
+        EncryptionKey = "my-crypto-key"
+    }
+);
 ```
 
 #### Notes
@@ -167,6 +182,54 @@ public class MyService
         await _stateProvider.SaveStateAsync(state);
     }
 }
+```
+
+## Drive BladeState with BladeStateProfile! 💿
+
+``` csharp
+var profile = new BladeStateProfile
+{
+    InstanceName = "MyApplicationState",
+    InstanceTimeout = TimeSpan.FromMinutes(120);
+    SaveOnInstanceTimeout = true;
+    EncryptionKey = "my-crypto-key",
+}
+```
+
+
+## ⚙️ Example: Binding Profile from appsettings.json
+
+You can configure profiles from appsettings.json and register them directly with a couple simple steps:
+
+1. Add the following structure to your appsettings.json file
+
+``` json
+
+{
+  "BladeState": {
+    "Profile": {
+      "InstanceId": "MyApplicationState",
+      "EncryptionKey": "my-crypto-key"
+    }
+  }
+}
+
+
+```
+
+2. Get the section and pass the BladeStateProfile to the 'AddBladeState();' extension method in your Program.cs
+
+``` csharp
+
+using BladeState;
+using BladeState.Models;
+using BladeState.Providers;
+
+var profile = builder.Configuration.GetSection("BladeState:Profile").Get<BladeStateProfile>();
+
+builder.Services.AddBladeState<MyAppState, SqlBladeStateProvider<MyAppState>>(profile);
+
+
 ```
 
 ---
