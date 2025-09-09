@@ -119,8 +119,8 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 			_timeoutCancellationTokenSource.Dispose();
 			_timeoutCancellationTokenSource = new CancellationTokenSource();
 
-			using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_timeoutCancellationTokenSource.Token, cancellationToken);
-			var token = linkedCts.Token;
+			using CancellationTokenSource linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_timeoutCancellationTokenSource.Token, cancellationToken);
+            CancellationToken token = linkedCancellationTokenSource.Token;
 
 			_timeoutTask = Task.Run(async () =>
 			{
@@ -178,8 +178,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 				_timeoutLock.Release();
 			}
 
-			if (_timeoutTask != null)
-				await _timeoutTask;
+			await _timeoutTask;
 
 			await DisposeAsyncCore();
 			GC.SuppressFinalize(this);
