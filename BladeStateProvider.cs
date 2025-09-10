@@ -35,7 +35,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	/// <returns></returns>
 	protected void OnStateChange(ProviderEventType eventType)
 	{
-		StateChanged.Invoke(this, new BladeStateProviderEventArgs<T>(Profile.InstanceId, State, eventType));
+		StateChanged?.Invoke(this, new BladeStateProviderEventArgs<T>(Profile.InstanceId, State, eventType));
 	}
 
 	public virtual async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
