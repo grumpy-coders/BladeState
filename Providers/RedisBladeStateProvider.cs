@@ -1,4 +1,5 @@
 using BladeState.Cryptography;
+using BladeState.Enums;
 using BladeState.Models;
 using StackExchange.Redis;
 using System.Text.Json;
@@ -31,6 +32,7 @@ public class RedisBladeStateProvider<T>(
 		if (redisValue.IsNullOrEmpty)
 		{
 			State = new T();
+			OnStateChange(ProviderEventType.Load);
 			return State;
 		}
 
@@ -38,10 +40,13 @@ public class RedisBladeStateProvider<T>(
 		{
 			CipherState = redisValue;
 			await DecryptStateAsync(cancellationToken);
+			OnStateChange(ProviderEventType.Load);
 			return State;
 		}
 
 		State = JsonSerializer.Deserialize<T>(redisValue);
+		OnStateChange(ProviderEventType.Load);
+
 		return State;
 	}
 
@@ -60,6 +65,8 @@ public class RedisBladeStateProvider<T>(
 		await _redis.StringSetAsync(GetKey(), JsonSerializer.Serialize(state)).ConfigureAwait(false);
 
 		await StartTimeoutTaskAsync(cancellationToken);
+
+		OnStateChange(ProviderEventType.Save);
 	}
 
 	public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
@@ -73,6 +80,8 @@ public class RedisBladeStateProvider<T>(
 		State = new T();
 
 		await StartTimeoutTaskAsync(cancellationToken);
+
+		OnStateChange(ProviderEventType.Clear);
 	}
 
 	/// <summary>

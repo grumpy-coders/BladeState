@@ -61,6 +61,8 @@ CREATE TABLE BladeState (
 
 ```csharp
 using Microsoft.Data.SqlClient;
+using BladeState;
+using BladeState.Models;
 using BladeState.Providers;
 
 builder.Services.AddBladeState<MyState, SqlBladeStateProvider<MyState>>(
@@ -119,6 +121,8 @@ Uses an Entity Framework `DbContext` to persist state directly in your model.
 #### Registration
 
 ```csharp
+using BladeState;
+using BladeState.Models;
 using BladeState.Providers;
 using Microsoft.EntityFrameworkCore;
 
@@ -184,18 +188,19 @@ public class MyService
 }
 ```
 
-## Drive BladeState with BladeStateProfile! 💿
+## 💿 Drive BladeState with BladeStateProfile!
 
 ``` csharp
 var profile = new BladeStateProfile
 {
+    InstanceId = string.Empty,
     InstanceName = "MyApplicationState",
-    InstanceTimeout = TimeSpan.FromMinutes(120);
-    SaveOnInstanceTimeout = true;
-    EncryptionKey = "my-crypto-key",
+    InstanceTimeout = TimeSpan.FromMinutes(120),
+    SaveOnInstanceTimeout = true,
+    AutoEncrypt = true,
+    EncryptionKey = "my-crypto-key"
 }
 ```
-
 
 ## ⚙️ Example: Binding Profile from appsettings.json
 
@@ -220,7 +225,6 @@ You can configure profiles from appsettings.json and register them directly with
 2. Get the section and pass the BladeStateProfile to the 'AddBladeState();' extension method in your Program.cs
 
 ``` csharp
-
 using BladeState;
 using BladeState.Models;
 using BladeState.Providers;
@@ -228,13 +232,11 @@ using BladeState.Providers;
 var profile = builder.Configuration.GetSection("BladeState:Profile").Get<BladeStateProfile>();
 
 builder.Services.AddBladeState<MyAppState, SqlBladeStateProvider<MyAppState>>(profile);
-
-
 ```
 
 ---
 
-## Built-in Encryption ❔🪽
+## ❔🪽 Built-in Encryption
 
 BladeState automatically encrypts persisted state data using AES encryption.
 
@@ -268,7 +270,18 @@ var profile = new BladeStateProfile
 builder.Services.AddBladeState<MyAppState, RedisBladeStateProvider<MyAppState>>(profile);
 ```
 
+## ❗Built-In Events
 
+``` csharp
+provider.OnStateChange += (sender, args) =>
+{
+    // get updated state if need be
+    var state = args.State;
+
+    // do something
+    Console.WriteLine($"State changed: {args.EventType} for {args.InstanceId}! There are now {state.Items.Count} items!");
+};
+```
 
 ## 📝 License
 

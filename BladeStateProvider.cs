@@ -3,6 +3,8 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BladeState.Cryptography;
+using BladeState.Enums;
+using BladeState.Events;
 using BladeState.Models;
 
 namespace BladeState;
@@ -24,6 +26,18 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	private readonly SemaphoreSlim _timeoutLock = new(1, 1);
 	private bool _disposed;
 
+	public event EventHandler<BladeStateProviderEventArgs<T>> StateChanged;
+
+	/// <summary>
+	/// Fires when a change occurs to the State. Such as after the State is loaded, saved, cleared. Can be used to update components, screens, force actions to occur, etc.
+	/// </summary>
+	/// <param name="eventType">The ProviderEventType to denote the type of change to the state</param>
+	/// <returns></returns>
+	protected void OnStateChange(ProviderEventType eventType)
+	{
+		StateChanged.Invoke(this, new BladeStateProviderEventArgs<T>(Profile.InstanceId, State, eventType));
+	}
+
 	public virtual async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
@@ -40,6 +54,9 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		}
 
 		await StartTimeoutTaskAsync(cancellationToken);
+
+		OnStateChange(ProviderEventType.Load);
+
 		return State;
 	}
 
@@ -61,6 +78,8 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		}
 
 		await StartTimeoutTaskAsync(cancellationToken);
+
+		OnStateChange(ProviderEventType.Save);
 	}
 
 	public virtual async Task ClearStateAsync(CancellationToken cancellationToken = default)
@@ -72,6 +91,8 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		CipherState = string.Empty;
 
 		await StartTimeoutTaskAsync(cancellationToken);
+
+		OnStateChange(ProviderEventType.Clear);
 	}
 
 	public virtual async Task EncryptStateAsync(CancellationToken cancellationToken = default)
@@ -120,7 +141,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 			_timeoutCancellationTokenSource = new CancellationTokenSource();
 
 			using CancellationTokenSource linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_timeoutCancellationTokenSource.Token, cancellationToken);
-            CancellationToken token = linkedCancellationTokenSource.Token;
+			CancellationToken token = linkedCancellationTokenSource.Token;
 
 			_timeoutTask = Task.Run(async () =>
 			{
