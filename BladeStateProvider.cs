@@ -104,9 +104,10 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		{
 			CipherState = Cryptography.Encrypt(JsonSerializer.Serialize(State));
 		}
-		catch
+		catch (Exception exception)
 		{
 			CipherState = string.Empty;
+			throw new InvalidOperationException($"Could not encrypt state. Ex: {exception.Message}");
 		}
 
 		await StartTimeoutTaskAsync(cancellationToken);
@@ -119,11 +120,12 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 
 		try
 		{
-			State = JsonSerializer.Deserialize<T>(Cryptography.Decrypt(CipherState)) ?? new T();
+			State = JsonSerializer.Deserialize<T>(Cryptography.Decrypt(CipherState));
 		}
-		catch
+		catch (Exception exception)
 		{
 			State = new T();
+			throw new InvalidOperationException($"Could not decrypt state. Ex: {exception.Message}");
 		}
 
 		await StartTimeoutTaskAsync(cancellationToken);
