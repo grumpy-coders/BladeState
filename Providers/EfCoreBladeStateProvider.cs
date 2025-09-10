@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BladeState.Cryptography;
+using BladeState.Enums;
 using BladeState.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,17 +35,25 @@ public class EfCoreBladeStateProvider<T>(
         catch
         {
             State = new T();
+
+            OnStateChange(ProviderEventType.Load);
             return State;
         }
 
         if (Profile.AutoEncrypt)
         {
             CipherState = entity.StateData;
+
             await DecryptStateAsync(cancellationToken);
+
+            OnStateChange(ProviderEventType.Load);
             return State;
         }
 
         State = JsonSerializer.Deserialize<T>(entity.StateData);
+
+        OnStateChange(ProviderEventType.Load);
+        
         return State;
     }
 
@@ -86,6 +95,8 @@ public class EfCoreBladeStateProvider<T>(
         await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         await StartTimeoutTaskAsync(cancellationToken);
+
+        OnStateChange(ProviderEventType.Save);
     }
 
     public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
@@ -112,6 +123,8 @@ public class EfCoreBladeStateProvider<T>(
         State = new T();
 
         await StartTimeoutTaskAsync(cancellationToken);
+
+        OnStateChange(ProviderEventType.Clear);
     }
 
     /// <summary>

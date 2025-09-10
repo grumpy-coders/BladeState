@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BladeState.Cryptography;
+using BladeState.Enums;
 using BladeState.Models;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -29,6 +30,7 @@ public class MemoryCacheBladeStateProvider<T>(
                 {
                     CipherState = data;
                     await DecryptStateAsync(cancellationToken);
+                    OnStateChange(ProviderEventType.Load);
                     return State;
                 }
 
@@ -39,10 +41,12 @@ public class MemoryCacheBladeStateProvider<T>(
         catch
         {
             State = new T();
+            OnStateChange(ProviderEventType.Load);
             return State;
         }
 
         State = new T();
+        OnStateChange(ProviderEventType.Load);
         return State;
     }
 
@@ -76,6 +80,8 @@ public class MemoryCacheBladeStateProvider<T>(
         }
 
         await StartTimeoutTaskAsync(cancellationToken);
+
+        OnStateChange(ProviderEventType.Save);
     }
 
     public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
@@ -96,6 +102,8 @@ public class MemoryCacheBladeStateProvider<T>(
         State = new T();
 
         await StartTimeoutTaskAsync(cancellationToken);
+
+        OnStateChange(ProviderEventType.Clear);
     }
 
     /// <summary>

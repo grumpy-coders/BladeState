@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BladeState.Cryptography;
+using BladeState.Enums;
 using BladeState.Models;
 
 namespace BladeState.Providers;
@@ -50,6 +51,7 @@ public class SqlBladeStateProvider<T>(
         catch
         {
             State = new T();
+            OnStateChange(ProviderEventType.Load);
             return State;
         }
 
@@ -57,10 +59,12 @@ public class SqlBladeStateProvider<T>(
         {
             CipherState = data;
             await DecryptStateAsync(cancellationToken);
+            OnStateChange(ProviderEventType.Load);
             return State;
         }
 
         State = JsonSerializer.Deserialize<T>(data);
+        OnStateChange(ProviderEventType.Load);
         return State;
     }
 
@@ -110,6 +114,8 @@ WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, sourc
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         await StartTimeoutTaskAsync(cancellationToken);
+
+        OnStateChange(ProviderEventType.Save);
     }
 
     public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
@@ -141,6 +147,8 @@ WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, sourc
         State = new T();
 
         await StartTimeoutTaskAsync(cancellationToken);
+
+        OnStateChange(ProviderEventType.Clear);
     }
 
     protected override async ValueTask DisposeAsyncCore()
