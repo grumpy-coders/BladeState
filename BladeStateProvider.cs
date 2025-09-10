@@ -34,7 +34,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	/// </summary>
 	/// <param name="eventType">The ProviderEventType to denote the type of change to the state</param>
 	/// <returns></returns>
-	protected void OnStateChange(ProviderEventType eventType)
+	protected void OnStateChange(ProviderEventType eventType = ProviderEventType.None)
 	{
 		StateChanged?.Invoke(this, new BladeStateProviderEventArgs<T>(Profile.InstanceId, State, eventType));
 	}
