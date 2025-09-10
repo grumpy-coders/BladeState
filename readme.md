@@ -275,9 +275,12 @@ When a provider method is called an event will be raised to be handled by consum
 This is useful for reliable UI updates.
 
 ``` csharp
+
+// inject the provider
 [Inject]
 public required MemoryCacheBladeStateProvider<MyState> Provider { get; set; }
 
+// add an event handler (anonymously)
 Provider.OnStateChange += (sender, args) =>
 {
     // get updated state if need be
@@ -287,6 +290,7 @@ Provider.OnStateChange += (sender, args) =>
     Console.WriteLine($"State changed: {args.EventType} for {args.InstanceId}! There are now {state.Items.Count} items!");
 };
 
+// add a custom handler
 Provider.OnStateChange += MyCustomEventHandler;
 ```
 
