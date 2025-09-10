@@ -14,7 +14,7 @@
     <!-- Discoverability -->
     <Description>
       BladeState is a lightweight server-side state/session persistence library 
-      for Razor and Blazor applications. It provides dependency-injected storage 
+      for applications that make use of dependency injection, such as Razor and Blazor apps. It provides dependency-injected storage 
       for persisting data across requests without relying on HttpContext.Session.
     </Description>
     <PackageTags>
