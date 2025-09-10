@@ -19,42 +19,60 @@ public class BladeStateCryptography
         _key = SHA256.HashData(Encoding.Unicode.GetBytes(key));
     }
 
-    public string Encrypt(string plaintext)
-    {
-        using Aes aes = Aes.Create();
-        aes.Key = _key;
-        aes.GenerateIV();
+	public string Encrypt(string plaintext)
+	{
+		using Aes aes = Aes.Create();
+		aes.Key = _key;
+		aes.GenerateIV();
 
-        using ICryptoTransform cryptoTransform = aes.CreateEncryptor(aes.Key, aes.IV);
-        byte[] bytes = Encoding.Unicode.GetBytes(plaintext);
-        byte[] cipherBytes = cryptoTransform.TransformFinalBlock(bytes, 0, bytes.Length);
+		using ICryptoTransform cryptoTransform = aes.CreateEncryptor(aes.Key, aes.IV);
+		byte[] bytes = Encoding.Unicode.GetBytes(plaintext);
+		byte[] cipherBytes = cryptoTransform.TransformFinalBlock(bytes, 0, bytes.Length);
 
-        // prepend IV for later decryption
-        byte[] result = new byte[aes.IV.Length + cipherBytes.Length];
-        Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);
-        Buffer.BlockCopy(cipherBytes, 0, result, aes.IV.Length, cipherBytes.Length);
+		byte[] result = new byte[aes.IV.Length + cipherBytes.Length];
+		Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);
+		Buffer.BlockCopy(cipherBytes, 0, result, aes.IV.Length, cipherBytes.Length);
 
-        return result.ToString();
-    }
+		return Convert.ToBase64String(result);
+	}
 
-    public string Decrypt(string cipherText)
-    {
-        using Aes aes = Aes.Create();
-        aes.Key = _key;
+	public string Decrypt(string cipherText)
+	{
+		if (string.IsNullOrWhiteSpace(cipherText))
+			return string.Empty;
 
-        byte[] encryptedBytes = Encoding.Unicode.GetBytes(cipherText);
+		byte[] encryptedBytes;
 
-        byte[] initializationVector = new byte[aes.BlockSize / 8];
-        byte[] actualCipher = new byte[cipherText.Length - initializationVector.Length];
+		try
+		{
+			encryptedBytes = Convert.FromBase64String(cipherText);
+		}
+		catch (FormatException)
+		{
+			return string.Empty;
+		}
 
-        Buffer.BlockCopy(encryptedBytes, 0, initializationVector, 0, initializationVector.Length);
-        Buffer.BlockCopy(encryptedBytes, initializationVector.Length, actualCipher, 0, actualCipher.Length);
+		if (encryptedBytes.Length == 0)
+			return string.Empty;
 
-        aes.IV = initializationVector;
+		using Aes aes = Aes.Create();
+		aes.Key = _key;
 
-        using ICryptoTransform cryptoTransform = aes.CreateDecryptor(aes.Key, aes.IV);
-        byte[] bytes = cryptoTransform.TransformFinalBlock(actualCipher, 0, actualCipher.Length);
+		if (encryptedBytes.Length < aes.BlockSize / 8)
+			return string.Empty; // not enough data to extract IV
 
-        return Encoding.Unicode.GetString(bytes);
-    }
+		byte[] initializationVector = new byte[aes.BlockSize / 8];
+		byte[] actualCipher = new byte[encryptedBytes.Length - initializationVector.Length];
+
+		Buffer.BlockCopy(encryptedBytes, 0, initializationVector, 0, initializationVector.Length);
+		Buffer.BlockCopy(encryptedBytes, initializationVector.Length, actualCipher, 0, actualCipher.Length);
+
+		aes.IV = initializationVector;
+
+		using ICryptoTransform cryptoTransform = aes.CreateDecryptor(aes.Key, aes.IV);
+		byte[] bytes = cryptoTransform.TransformFinalBlock(actualCipher, 0, actualCipher.Length);
+
+		return Encoding.Unicode.GetString(bytes);
+	}
+
 }
