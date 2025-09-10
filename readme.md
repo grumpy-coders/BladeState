@@ -271,9 +271,14 @@ builder.Services.AddBladeState<MyAppState, RedisBladeStateProvider<MyAppState>>(
 ```
 
 ## ❗Built-In Events
+When a provider method is called an event will be raised to be handled by consuming components and services.
+This is useful for reliable UI updates.
 
 ``` csharp
-provider.OnStateChange += (sender, args) =>
+[Inject]
+public required MemoryCacheBladeStateProvider<MyState> Provider { get; set; }
+
+Provider.OnStateChange += (sender, args) =>
 {
     // get updated state if need be
     var state = args.State;
@@ -281,6 +286,8 @@ provider.OnStateChange += (sender, args) =>
     // do something
     Console.WriteLine($"State changed: {args.EventType} for {args.InstanceId}! There are now {state.Items.Count} items!");
 };
+
+Provider.OnStateChange += MyCustomEventHandler;
 ```
 
 ## 📝 License
