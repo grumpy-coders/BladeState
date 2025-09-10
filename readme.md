@@ -278,7 +278,7 @@ This is useful for reliable UI updates.
 
 // inject the provider
 [Inject]
-public required MemoryCacheBladeStateProvider<MyState> Provider { get; set; }
+required public MemoryCacheBladeStateProvider<MyState> Provider { get; set; }
 
 // add an event handler (anonymously)
 Provider.OnStateChange += (sender, args) =>
