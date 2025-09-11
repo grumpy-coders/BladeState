@@ -15,7 +15,7 @@ public static class BladeStateServiceCollectionExtensions
 
         services.AddSingleton(new BladeStateCryptography(profile.EncryptionKey));
 
-        services.AddSingleton<BladeStateProvider<T>>();
+        services.AddSingleton<T>();
 
         return services;
     }
