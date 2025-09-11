@@ -26,7 +26,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	private readonly SemaphoreSlim _timeoutLock = new(1, 1);
 	private bool _disposed;
 
-	public event EventHandler<BladeStateProviderEventArgs<T>> StateChanged = delegate { };
+	public virtual event EventHandler<BladeStateProviderEventArgs<T>> StateChanged = delegate { };
 
 	/// <summary>
 	/// Fires when a change occurs to the State. Such as after the State is loaded, saved, cleared. Can be used to update components, screens, force actions to occur, etc.
