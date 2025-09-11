@@ -1,5 +1,11 @@
 # BladeState
 
+## THIS PROJECT IS ACTIVELY BEING DEVELOPED, AND IS BLEEDING EDGE, I'M DOING MY BEST TO GET THESE ISSUE RESOLVED ASAP WITH CHANGES BEING MADE EVERYDAY, ACTIVELY UPDATING NUGET AND README, HMU FOR FEATURE REQUESTS -> doomfaller@gmail.com
+## THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO 
+## Yours truly, ~doom
+
+
+
 [![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![License](https://img.shields.io/github/license/doomfaller/BladeState.svg?style=flat)](LICENSE)
