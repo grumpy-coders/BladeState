@@ -26,8 +26,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	private readonly SemaphoreSlim _timeoutLock = new(1, 1);
 	private bool _disposed;
 
-	#nullable enable // not sure what to do about this one :P
-	public event EventHandler<BladeStateProviderEventArgs<T>>? StateChanged;
+	public event EventHandler<BladeStateProviderEventArgs<T>> StateChanged = (sender, args) => { };
 
 	/// <summary>
 	/// Fires when a change occurs to the State. Such as after the State is loaded, saved, cleared. Can be used to update components, screens, force actions to occur, etc.
@@ -36,7 +35,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	/// <returns></returns>
 	protected void OnStateChange(ProviderEventType eventType = ProviderEventType.None)
 	{
-		StateChanged?.Invoke(this, new BladeStateProviderEventArgs<T>(Profile.InstanceId, State, eventType));
+		StateChanged.Invoke(this, new BladeStateProviderEventArgs<T>(Profile.InstanceId, State, eventType));
 	}
 
 	public virtual async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
