@@ -35,6 +35,7 @@ public class MemoryCacheBladeStateProvider<T>(
                 }
 
                 State = JsonSerializer.Deserialize<T>(data);
+                OnStateChange(ProviderEventType.Load);
                 return State;
             }
         }
