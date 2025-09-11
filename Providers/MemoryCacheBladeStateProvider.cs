@@ -18,42 +18,34 @@ public class MemoryCacheBladeStateProvider<T>(
     public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
-            return State;
+            return State ?? new T();
 
         await StartTimeoutTaskAsync(cancellationToken);
 
         try
         {
-            if (memoryCache.TryGetValue(Profile.InstanceId, out string data))
+            if (memoryCache.TryGetValue(Profile.InstanceId, out string data) && !string.IsNullOrWhiteSpace(data))
             {
-                if (string.IsNullOrWhiteSpace(data))
-                {
-                    State = new T();
-                    OnStateChange(ProviderEventType.Load);
-                    return State;    
-                }
-
                 if (Profile.AutoEncrypt)
                 {
                     CipherState = data;
                     await DecryptStateAsync(cancellationToken);
-                    OnStateChange(ProviderEventType.Load);
-                    return State;
                 }
-
-                State = JsonSerializer.Deserialize<T>(data);
-                OnStateChange(ProviderEventType.Load);
-                return State;
+                else
+                {
+                    State = JsonSerializer.Deserialize<T>(data) ?? new T();
+                }
+            }
+            else
+            {
+                State = new T();
             }
         }
         catch
         {
             State = new T();
-            OnStateChange(ProviderEventType.Load);
-            return State;
         }
 
-        State = new T();
         OnStateChange(ProviderEventType.Load);
         return State;
     }
@@ -63,10 +55,11 @@ public class MemoryCacheBladeStateProvider<T>(
         if (cancellationToken.IsCancellationRequested)
             return;
 
-        string data;
+        State = state ?? new T();
 
         try
         {
+            string data;
             if (Profile.AutoEncrypt)
             {
                 await EncryptStateAsync(cancellationToken);
@@ -74,7 +67,7 @@ public class MemoryCacheBladeStateProvider<T>(
             }
             else
             {
-                data = JsonSerializer.Serialize(state);
+                data = JsonSerializer.Serialize(State);
             }
 
             memoryCache.Set(Profile.InstanceId, data, new MemoryCacheEntryOptions
@@ -88,7 +81,6 @@ public class MemoryCacheBladeStateProvider<T>(
         }
 
         await StartTimeoutTaskAsync(cancellationToken);
-
         OnStateChange(ProviderEventType.Save);
     }
 
@@ -110,7 +102,6 @@ public class MemoryCacheBladeStateProvider<T>(
         State = new T();
 
         await StartTimeoutTaskAsync(cancellationToken);
-
         OnStateChange(ProviderEventType.Clear);
     }
 
