@@ -26,6 +26,11 @@ public class MemoryCacheBladeStateProvider<T>(
         {
             if (memoryCache.TryGetValue(Profile.InstanceId, out string data))
             {
+                if (string.IsNullOrWhiteSpace(data))
+                {
+                    return new T();    
+                }
+
                 if (Profile.AutoEncrypt)
                 {
                     CipherState = data;
