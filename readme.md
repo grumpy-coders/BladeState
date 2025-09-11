@@ -1,11 +1,15 @@
 # BladeState
 
-## THIS PROJECT IS ACTIVELY BEING DEVELOPED, AND IS BLEEDING EDGE, THERE ARE SOME KNOWN ISSUES, I'M DOING MY BEST TO GET THESE RESOLVED ASAP WITH CHANGES BEING MADE EVERYDAY
+## THIS PROJECT IS ACTIVELY BEING DEVELOPED, AND IS BLEEDING EDGE
 ## I AM ACTIVELY UPDATING ON NUGET AND README, HMU FOR FEATURE REQUESTS -> doomfaller@gmail.com
 ## THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO 
 ## Yours truly, ~doom
 
+## What's new in version 1.0.2?
 
+- Updated DI syntax for built-in providers
+- Crypto now works as expected
+- Events becoming null bug is fixed
 
 [![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
