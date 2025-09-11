@@ -120,7 +120,8 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 
 		try
 		{
-			State = JsonSerializer.Deserialize<T>(Cryptography.Decrypt(CipherState));
+            string decrypted = Cryptography.Decrypt(CipherState);
+			State = JsonSerializer.Deserialize<T>(decrypted) ?? new T();
 		}
 		catch (Exception exception)
 		{
