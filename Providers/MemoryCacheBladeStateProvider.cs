@@ -28,7 +28,9 @@ public class MemoryCacheBladeStateProvider<T>(
             {
                 if (string.IsNullOrWhiteSpace(data))
                 {
-                    return new T();    
+                    State = new T();
+                    OnStateChange(ProviderEventType.Load);
+                    return State;    
                 }
 
                 if (Profile.AutoEncrypt)
