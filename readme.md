@@ -7,11 +7,11 @@
 
 #There is a known issue with DI/for EFCore Provider, I will be releasing a fix asap
 
-## What's new in version 1.0.2?
+## What's new in version 1.0.3?
 
-- Updated DI syntax for built-in providers
-- Crypto now works as expected
-- Events becoming null bug is fixed
+- More DI syntax for built-in providers (services.AddSqlBladeState(), .AddEfCoreBladeState())
+- Cleaned up and fixed some issues with SQL and EFCore Providers
+- Added support for additional sql types through sql provider
 
 [![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
