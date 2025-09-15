@@ -206,15 +206,8 @@ Now wire up the EF Core provider for your state type.
 
 ```csharp
 // Register EfCoreBladeStateProvider with your types
-builder.Services.AddEfCoreBladeState<MyState, BladeStateEntity, MyDbContext>(profile);
+builder.Services.AddEfCoreBladeState<MyState>(profile);
 ```
-
-Here’s what each type parameter means:
-
-- `License` → Your state type (`TState`)
-- `BladeStateEntity` → Entity model (`TEntity`) storing the serialized state
-- `LicenseDbContext` → EF Core `DbContext` (`TDbContext`) that manages persistence
-
 ---
 
 ## ✅ Summary
