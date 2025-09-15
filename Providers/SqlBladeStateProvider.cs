@@ -233,6 +233,8 @@ public class SqlBladeStateProvider<T>(
         };
 
         await using DbConnection connection = _connectionFactory();
+        await connection.OpenAsync();
+
         await using DbCommand command = connection.CreateCommand();
         command.CommandText = sql;
 
