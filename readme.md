@@ -5,6 +5,8 @@
 ## THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO 
 ## Yours truly, ~doom
 
+#There is a known issue with DI/for EFCore Provider, I will be releasing a fix asap
+
 ## What's new in version 1.0.2?
 
 - Updated DI syntax for built-in providers
