@@ -10,6 +10,7 @@
     <PackageId>BladeState</PackageId>
     <Authors>doomfaller,lorddurus</Authors>
     <Company>grumpy-coders</Company>
+     <PackageIcon>assets/gfx/logo.png</PackageIcon>
 
     <!-- Discoverability -->
     <Description>
@@ -29,8 +30,9 @@
 
   <ItemGroup>
     <None Include="readme.md" Pack="true" PackagePath="" />
+    <None Include="assets/gfx/logo.png" Pack="true" PackagePath="assets/gfx/" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
-    <PackageReference Include="StackExchange.Redis" Version="2.9.11" />
+    <PackageReference Include="StackExchange.Redis" Version="2.9.11" />    
   </ItemGroup>
 
 </Project>
