@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Data.Common;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -14,10 +13,13 @@ namespace BladeState.Providers;
 public class SqlBladeStateProvider<T>(
     Func<DbConnection> connectionFactory,
     BladeStateCryptography bladeStateCryptography,
-    BladeStateProfile bladeStateProfile
+    BladeStateProfile bladeStateProfile,
+    SqlType sqlType = SqlType.None
 ) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
     private readonly Func<DbConnection> _connectionFactory = connectionFactory;
+
+    private bool _tableExists { get; set; }
 
     public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
@@ -26,22 +28,32 @@ public class SqlBladeStateProvider<T>(
 
         await StartTimeoutTaskAsync(cancellationToken);
 
+        await EnsureTableExistsAsync(cancellationToken);
+
         await using DbConnection connection = _connectionFactory();
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
-        {
             throw new InvalidOperationException("The instance name is invalid");
-        }
+
+        string sql = sqlType switch
+        {
+            SqlType.SqlServer => $"SELECT TOP 1 Data FROM [{Profile.InstanceName}] WHERE InstanceId = @InstanceId",
+            SqlType.Postgres => $"SELECT Data FROM \"{Profile.InstanceName}\" WHERE \"InstanceId\" = @InstanceId LIMIT 1",
+            SqlType.MySql => $"SELECT Data FROM `{Profile.InstanceName}` WHERE InstanceId = @InstanceId LIMIT 1",
+            SqlType.Sqlite => $"SELECT Data FROM \"{Profile.InstanceName}\" WHERE InstanceId = @InstanceId LIMIT 1",
+            _ => throw new NotSupportedException("SqlType is invalid")
+        };
 
         await using DbCommand command = connection.CreateCommand();
-        command.CommandText = $"SELECT TOP 1 Data FROM [{Profile.InstanceName}] WHERE InstanceId = @InstanceId";
-        DbParameter instanceIdParameter = command.CreateParameter();
-        instanceIdParameter.ParameterName = "@InstanceId";
-        instanceIdParameter.Value = Profile.InstanceId;
-        command.Parameters.Add(instanceIdParameter);
+        command.CommandText = sql;
 
-        string data;
+        DbParameter p = command.CreateParameter();
+        p.ParameterName = "@InstanceId";
+        p.Value = Profile.InstanceId;
+        command.Parameters.Add(p);
+
+        string data = string.Empty;
 
         try
         {
@@ -55,15 +67,24 @@ public class SqlBladeStateProvider<T>(
             return State;
         }
 
-        if (Profile.AutoEncrypt)
+        if (string.IsNullOrEmpty(data))
         {
-            CipherState = data;
-            await DecryptStateAsync(cancellationToken);
+            State = new T();
+            CipherState = string.Empty;
             OnStateChange(ProviderEventType.Load);
             return State;
         }
 
-        State = JsonSerializer.Deserialize<T>(data);
+        if (Profile.AutoEncrypt)
+        {
+            CipherState = data;
+            await DecryptStateAsync(cancellationToken);
+        }
+        else
+        {
+            State = JsonSerializer.Deserialize<T>(data) ?? new T();
+        }
+
         OnStateChange(ProviderEventType.Load);
         return State;
     }
@@ -74,7 +95,6 @@ public class SqlBladeStateProvider<T>(
             return;
 
         string data;
-
         if (Profile.AutoEncrypt)
         {
             await EncryptStateAsync(cancellationToken);
@@ -89,17 +109,36 @@ public class SqlBladeStateProvider<T>(
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
-        {
             throw new InvalidOperationException("The instance name is invalid");
-        }
+
+        string sql = sqlType switch
+        {
+            SqlType.SqlServer => $@"
+            MERGE [{Profile.InstanceName}] AS target
+            USING (SELECT @InstanceId AS InstanceId, @Data AS Data) AS source
+            ON target.InstanceId = source.InstanceId
+            WHEN MATCHED THEN UPDATE SET Data = source.Data
+            WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, source.Data);",
+
+            SqlType.Postgres => $@"
+            INSERT INTO ""{Profile.InstanceName}"" (""InstanceId"", ""Data"")
+            VALUES (@InstanceId, @Data)
+            ON CONFLICT (""InstanceId"") DO UPDATE SET ""Data"" = EXCLUDED.""Data"";",
+
+            SqlType.MySql => $@"
+            INSERT INTO `{Profile.InstanceName}` (InstanceId, Data)
+            VALUES (@InstanceId, @Data)
+            ON DUPLICATE KEY UPDATE Data = VALUES(Data);",
+
+            SqlType.Sqlite => $@"
+            INSERT OR REPLACE INTO ""{Profile.InstanceName}"" (InstanceId, Data)
+            VALUES (@InstanceId, @Data);",
+
+            _ => throw new NotSupportedException("Unsupported SQL type")
+        };
 
         await using DbCommand command = connection.CreateCommand();
-        command.CommandText = $@"
-MERGE [{Profile.InstanceName}] AS target
-USING (SELECT @InstanceId AS InstanceId, @Data AS Data) AS source
-ON target.InstanceId = source.InstanceId
-WHEN MATCHED THEN UPDATE SET Data = source.Data
-WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, source.Data);";
+        command.CommandText = sql;
 
         DbParameter instanceIdParameter = command.CreateParameter();
         instanceIdParameter.ParameterName = "@InstanceId";
@@ -114,7 +153,6 @@ WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, sourc
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         await StartTimeoutTaskAsync(cancellationToken);
-
         OnStateChange(ProviderEventType.Save);
     }
 
@@ -126,13 +164,15 @@ WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, sourc
         await using DbConnection connection = _connectionFactory();
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-        await using DbCommand command = connection.CreateCommand();
-        command.CommandText = "DELETE FROM BladeState WHERE InstanceId = @InstanceId";
+        string sql = $"DELETE FROM {GetSanitizedTableName()} WHERE InstanceId = @InstanceId";
 
-        DbParameter instanceIdParameter = command.CreateParameter();
-        instanceIdParameter.ParameterName = "@InstanceId";
-        instanceIdParameter.Value = Profile.InstanceId;
-        command.Parameters.Add(instanceIdParameter);
+        await using DbCommand command = connection.CreateCommand();
+        command.CommandText = sql;
+
+        DbParameter p = command.CreateParameter();
+        p.ParameterName = "@InstanceId";
+        p.Value = Profile.InstanceId;
+        command.Parameters.Add(p);
 
         try
         {
@@ -140,28 +180,70 @@ WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, sourc
         }
         catch
         {
-            // swallow or log exceptions
+            // swallow or log
         }
 
         CipherState = string.Empty;
         State = new T();
 
         await StartTimeoutTaskAsync(cancellationToken);
-
         OnStateChange(ProviderEventType.Clear);
     }
 
-    protected override async ValueTask DisposeAsyncCore()
+    private string GetSanitizedTableName()
     {
+        if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
+            throw new InvalidOperationException("Invalid table name");
+        return $"[{Profile.InstanceName}]";
+    }
+
+    private async Task EnsureTableExistsAsync(CancellationToken cancellationToken)
+    {
+        if (_tableExists)
+            return;
+
+        string sql = sqlType switch
+        {
+            SqlType.SqlServer => $@"
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{Profile.InstanceName}' AND xtype='U')
+            CREATE TABLE [{Profile.InstanceName}] (
+                InstanceId NVARCHAR(200) PRIMARY KEY,
+                Data NVARCHAR(MAX) NOT NULL
+            );",
+
+            SqlType.Postgres => $@"
+            CREATE TABLE IF NOT EXISTS ""{Profile.InstanceName}"" (
+                ""InstanceId"" VARCHAR(200) PRIMARY KEY,
+                ""Data"" TEXT NOT NULL
+            );",
+
+            SqlType.MySql => $@"
+            CREATE TABLE IF NOT EXISTS `{Profile.InstanceName}` (
+                InstanceId VARCHAR(200) PRIMARY KEY,
+                Data TEXT NOT NULL
+            );",
+
+            SqlType.Sqlite => $@"
+            CREATE TABLE IF NOT EXISTS ""{Profile.InstanceName}"" (
+                InstanceId TEXT PRIMARY KEY,
+                Data TEXT NOT NULL
+            );",
+
+            _ => throw new NotSupportedException("Unsupported SQL type")
+        };
+
+        await using DbConnection connection = _connectionFactory();
+        await using DbCommand command = connection.CreateCommand();
+        command.CommandText = sql;
+
         try
         {
-            await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            _tableExists = true;
         }
-        catch
+        catch (Exception exception)
         {
-            // swallow or log exceptions
+            throw new InvalidOperationException($"An error occurred ensuring existence of sql state table. Ex: {exception.Message}");
         }
-
-        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

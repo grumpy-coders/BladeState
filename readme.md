@@ -52,7 +52,7 @@ using BladeState;
 using BladeState.Models;
 using BladeState.Providers;
 
-builder.Services.AddBladeState<MyState, MemoryCacheBladeStateProvider<MyState>>();
+builder.Services.AddMemoryCacheBladeState<MyState>();
 ```
 
 ### 2. SQL Provider (`SqlBladeStateProvider<T>`) 📃
@@ -76,15 +76,13 @@ using BladeState;
 using BladeState.Models;
 using BladeState.Providers;
 
-builder.Services.AddBladeState<MyState, SqlBladeStateProvider<MyState>>(
-    () => new SqlConnection("Server=localhost;Database=BladeStateDb;User Id=yourUserId;Password=YourStrong(!)Password;TrustServerCertificate=True;"))
-    (
-        new BladeStateProfile
-        {
-            InstanceName = "MyBladeStateTable"
-            EncryptionKey = "my-crypto-key"
-        }
-    );
+var profile = new BladeStateProfile();    
+
+builder.Services.AddSqlBladeState<MyState>(
+    () => new SqlConnection("Server=localhost;Database=BladeStateDb;User Id=yourUserId;Password=YourStrong(!)Password;TrustServerCertificate=True;"),
+    profile,
+    SqlType.MySql
+); 
 
 ```
 
@@ -109,7 +107,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect("localhost")
 );
 
-builder.Services.AddBladeState<MyState, RedisBladeStateProvider<MyState>>(
+builder.Services.AddRedisBladeState<MyState>(
     new BladeStateProfile
     {
         InstanceName = "MyAppUsingRedis" //If InstanceName is not provided the value will be 'BladeState'
@@ -132,28 +130,92 @@ Uses an Entity Framework `DbContext` to persist state directly in your model.
 #### Registration
 
 ```csharp
-using BladeState;
+
+## 1. Create your EF Core `DbContext`
+
+Define a `DbContext` that includes your `BladeStateEntity` set. This is where BladeState will persist state.
+- Optionally you may inherit from the IBladeStateEntity to extend for your organization
+
+```csharp
 using BladeState.Models;
-using BladeState.Providers;
 using Microsoft.EntityFrameworkCore;
 
-builder.Services.AddDbContext<MyDbContext>(options =>
-    options.UseSqlServer("Server=localhost;Database=BladeStateDb;User Id=sa;Password=YourStrong(!)Password;TrustServerCertificate=True;"));
+namespace MyApp.Data;
 
-builder.Services.AddBladeState<MyState, EfCoreBladeStateProvider<MyState>>(
-    new BladeStateProfile
-    {
-        InstanceName = "MyEfCoreState",
-        EncryptionKey = "my-crypto-key"
-    }
+public class MyDbContext : DbContext
+{
+    public LicenseDbContext(DbContextOptions<MyDbContext> options)
+        : base(options) { }
+
+    // Required for BladeState
+    public DbSet<BladeStateEntity> BladeStates { get; set; }
+}
+```
+---
+
+## 2. Configure `DbContext` in `Program.cs`
+
+Register your `DbContext` with EF Core.  
+
+```csharp
+// --- EF Core ---
+builder.Services.AddDbContext<MyDbContext>(options =>
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("MyConnection")
+    )
 );
 ```
 
-#### Notes
+---
 
-* Assumes `T` maps directly to a table via EF Core.
-* Uses normal `DbContext.SaveChangesAsync()` semantics.
-* Best for when you want strongly typed schema vs JSON.
+## 3. Add a BladeState Profile
+
+In your `appsettings.json`, define the BladeState profile:
+
+```json
+{
+  "BladeState": {
+    "Profile": {
+      "AutoEncrypt": true,
+      "EncryptionKey": "your-crypto-key"
+    }
+  }
+}
+```
+
+Then load it inside `Program.cs`:
+
+```csharp
+// --- BladeState ---
+BladeStateProfile profile = builder.Configuration
+    .GetSection("BladeState:Profile")
+    .Get<BladeStateProfile>();
+```
+
+---
+
+## 4. Register the EF Core Provider
+
+Now wire up the EF Core provider for your state type.
+
+```csharp
+// Register EfCoreBladeStateProvider with your types
+builder.Services.AddEfCoreBladeState<MyState, BladeStateEntity, MyDbContext>(profile);
+```
+
+Here’s what each type parameter means:  
+
+- `License` → Your state type (`TState`)  
+- `BladeStateEntity` → Entity model (`TEntity`) storing the serialized state  
+- `LicenseDbContext` → EF Core `DbContext` (`TDbContext`) that manages persistence  
+
+---
+
+## ✅ Summary
+
+- `DbContext` must include `DbSet<BladeStateEntity>`.  
+- `AddDbContext` should be **Scoped**.  
+- Use `AddEfCoreBladeState<TState, TEntity, TDbContext>(profile)` for wiring.  
 
 ---
 
@@ -169,6 +231,8 @@ builder.Services.AddBladeState<MyState, EfCoreBladeStateProvider<MyState>>(
 ---
 
 ## 🧩 Simple Service Collection Wire-up
+
+-- this syntax is included primarily to extend BladeState with your own providers
 
 Usage:
 

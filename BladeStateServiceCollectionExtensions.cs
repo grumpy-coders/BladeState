@@ -2,6 +2,10 @@ using Microsoft.Extensions.DependencyInjection;
 using BladeState.Cryptography;
 using BladeState.Models;
 using BladeState.Providers;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Data.Common;
+using BladeState.Enums;
 
 namespace BladeState;
 
@@ -38,7 +42,6 @@ public static class BladeStateServiceCollectionExtensions
 
     /// <summary>
     /// Registers a BladeState provider using Redis as the backing store.
-    /// Requires that RedisBladeStateProvider<TState> exists.
     /// </summary>
     public static IServiceCollection AddRedisBladeState<TState>(
         this IServiceCollection services,
@@ -53,17 +56,32 @@ public static class BladeStateServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers a BladeState provider using Entity Framework Core (SQL) as the backing store.
-    /// Requires that EfCoreBladeStateProvider<TState> exists.
+    /// Registers a BladeState provider using SQL (direct ADO.NET or custom provider).
+    /// Generic variant for strongly-typed state. Need to pass a connection delegate
     /// </summary>
-    public static IServiceCollection AddEfCoreBladeState<TState>(
+    public static IServiceCollection AddSqlBladeState<TState>(
         this IServiceCollection services,
-        BladeStateProfile profile)
+        Func<DbConnection> connectionDelegate,
+        BladeStateProfile profile,
+        SqlType sqlType = SqlType.SqlServer)
         where TState : class, new()
     {
         services.AddSingleton(profile);
         services.AddSingleton(new BladeStateCryptography(profile.EncryptionKey));
-        services.AddSingleton<EfCoreBladeStateProvider<TState>>();
+        services.AddSingleton(sp => new SqlBladeStateProvider<TState>(connectionDelegate, sp.GetRequiredService<BladeStateCryptography>(), sp.GetRequiredService<BladeStateProfile>(), sqlType));
+
+        return services;
+    }
+
+    public static IServiceCollection AddEfCoreBladeState<TState, TDbContext>(
+        this IServiceCollection services,
+        BladeStateProfile profile)
+        where TState : class, new()
+        where TDbContext : DbContext
+    {
+        services.AddSingleton(profile);
+        services.AddSingleton(sp => new BladeStateCryptography(profile.EncryptionKey));
+        services.AddScoped<EfCoreBladeStateProvider<TState, TDbContext>>();
 
         return services;
     }
