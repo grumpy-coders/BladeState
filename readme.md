@@ -1,8 +1,11 @@
 # BladeState
 
 ## THIS PROJECT IS ACTIVELY BEING DEVELOPED, AND IS BLEEDING EDGE
+
 ## I AM ACTIVELY UPDATING ON NUGET AND README, HMU FOR FEATURE REQUESTS -> doomfaller@gmail.com
-## THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO 
+
+## THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO
+
 ## Yours truly, ~doom
 
 #There is a known issue with DI/for EFCore Provider, I will be releasing a fix asap
@@ -13,8 +16,8 @@
 - Cleaned up and fixed some issues with SQL and EFCore Providers
 - Added support for additional sql types through sql provider
 
-[![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
+[![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat&logo=nuget)](https://www.nuget.org/packages/BladeState/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![License](https://img.shields.io/github/license/doomfaller/BladeState.svg?style=flat)](LICENSE)
 
 **BladeState** is a lightweight server-side dependency injection state persistence library for .NET applications.
@@ -24,10 +27,10 @@ It provides **dependency-injected storage** for persisting state across requests
 
 ## ✨ Features
 
-* 🗂 Server-side storage abstraction
-* ⚡ Easy integration with **Dependency Injection**
-* 🔄 Works across Razor & Blazor server applications
-* 🔧 Extensible design for custom providers (e.g. Redis, SQL, Memory Cache)
+- 🗂 Server-side storage abstraction
+- ⚡ Easy integration with **Dependency Injection**
+- 🔄 Works across Razor & Blazor server applications
+- 🔧 Extensible design for custom providers (e.g. Redis, SQL, Memory Cache)
 
 ---
 
@@ -49,7 +52,7 @@ BladeState includes multiple built-in providers for persisting state:
 
 Stores state in in-memory cache for the lifetime of the application.
 
-``` csharp
+```csharp
 using BladeState;
 using BladeState.Models;
 using BladeState.Providers;
@@ -78,20 +81,20 @@ using BladeState;
 using BladeState.Models;
 using BladeState.Providers;
 
-var profile = new BladeStateProfile();    
+var profile = new BladeStateProfile();
 
 builder.Services.AddSqlBladeState<MyState>(
     () => new SqlConnection("Server=localhost;Database=BladeStateDb;User Id=yourUserId;Password=YourStrong(!)Password;TrustServerCertificate=True;"),
     profile,
     SqlType.MySql
-); 
+);
 
 ```
 
 #### How it works
 
-* Uses a simple key/value table (`InstanceId`, `Data`).
-* JSON serialization handled automatically.
+- Uses a simple key/value table (`InstanceId`, `Data`).
+- JSON serialization handled automatically.
 
 ---
 
@@ -120,8 +123,8 @@ builder.Services.AddRedisBladeState<MyState>(
 
 #### Notes
 
-* Stores JSON under a Redis key formatted like `{BladeStateProfile.InstanceName}-{BladeStateProfile.InstanceId}`.
-* Fast, distributed, great for scale-out.
+- Stores JSON under a Redis key formatted like `{BladeStateProfile.InstanceName}:{BladeStateProfile.InstanceId}`.
+- Fast, distributed, great for scale-out.
 
 ---
 
@@ -131,7 +134,7 @@ Uses an Entity Framework `DbContext` to persist state directly in your model.
 
 #### Registration
 
-```csharp
+````csharp
 
 ## 1. Create your EF Core `DbContext`
 
@@ -152,12 +155,13 @@ public class MyDbContext : DbContext
     // Required for BladeState
     public DbSet<BladeStateEntity> BladeStates { get; set; }
 }
-```
+````
+
 ---
 
 ## 2. Configure `DbContext` in `Program.cs`
 
-Register your `DbContext` with EF Core.  
+Register your `DbContext` with EF Core.
 
 ```csharp
 // --- EF Core ---
@@ -205,30 +209,30 @@ Now wire up the EF Core provider for your state type.
 builder.Services.AddEfCoreBladeState<MyState, BladeStateEntity, MyDbContext>(profile);
 ```
 
-Here’s what each type parameter means:  
+Here’s what each type parameter means:
 
-- `License` → Your state type (`TState`)  
-- `BladeStateEntity` → Entity model (`TEntity`) storing the serialized state  
-- `LicenseDbContext` → EF Core `DbContext` (`TDbContext`) that manages persistence  
+- `License` → Your state type (`TState`)
+- `BladeStateEntity` → Entity model (`TEntity`) storing the serialized state
+- `LicenseDbContext` → EF Core `DbContext` (`TDbContext`) that manages persistence
 
 ---
 
 ## ✅ Summary
 
-- `DbContext` must include `DbSet<BladeStateEntity>`.  
-- `AddDbContext` should be **Scoped**.  
-- Use `AddEfCoreBladeState<TState, TEntity, TDbContext>(profile)` for wiring.  
+- `DbContext` must include `DbSet<BladeStateEntity>`.
+- `AddDbContext` should be **Scoped**.
+- Use `AddEfCoreBladeState<TState, TEntity, TDbContext>(profile)` for wiring.
 
 ---
 
 ## ⚖️ Provider Comparison
 
-| Provider    | Best For                            | Pros                                               | Cons                                           |
-| ----------- | ----------------------------------- | -------------------------------------------------- | ---------------------------------------------- |
-| **Memory Cache** | Performance and application level processing | Simple, next to no overhead, fast | Requires custom handling for persistence if necessary |
-| **SQL**     | Simple persistence in relational DB | Works out of the box, JSON storage | Tied to SQL dialect, less efficient than Redis |
-| **Redis**   | High-performance distributed cache  | Fast, scalable, great for web farms                | Requires Redis infrastructure, persistence optional     |
-| **EF Core** | Strongly-typed relational models    | Uses your existing EF models, schema-first         | More overhead, requires migrations             |
+| Provider         | Best For                                     | Pros                                       | Cons                                                  |
+| ---------------- | -------------------------------------------- | ------------------------------------------ | ----------------------------------------------------- |
+| **Memory Cache** | Performance and application level processing | Simple, next to no overhead, fast          | Requires custom handling for persistence if necessary |
+| **SQL**          | Simple persistence in relational DB          | Works out of the box, JSON storage         | Tied to SQL dialect, less efficient than Redis        |
+| **Redis**        | High-performance distributed cache           | Fast, scalable, great for web farms        | Requires Redis infrastructure, persistence optional   |
+| **EF Core**      | Strongly-typed relational models             | Uses your existing EF models, schema-first | More overhead, requires migrations                    |
 
 ---
 
@@ -267,7 +271,7 @@ public class MyService
 
 ## 💿 Drive BladeState with BladeStateProfile!
 
-``` csharp
+```csharp
 var profile = new BladeStateProfile
 {
     InstanceId = string.Empty,
@@ -285,8 +289,7 @@ You can configure profiles from appsettings.json and register them directly with
 
 1. Add the following structure to your appsettings.json file
 
-``` json
-
+```json
 {
   "BladeState": {
     "Profile": {
@@ -295,13 +298,11 @@ You can configure profiles from appsettings.json and register them directly with
     }
   }
 }
-
-
 ```
 
 2. Get the section and pass the BladeStateProfile to the 'AddBladeState();' extension method in your Program.cs
 
-``` csharp
+```csharp
 using BladeState;
 using BladeState.Models;
 using BladeState.Providers;
@@ -348,10 +349,11 @@ builder.Services.AddBladeState<MyAppState, RedisBladeStateProvider<MyAppState>>(
 ```
 
 ## ❗Built-In Events
+
 When a provider method is called an event will be raised to be handled by consuming components and services.
 This is useful for reliable UI updates.
 
-``` csharp
+```csharp
 
 // inject the provider
 [Inject]

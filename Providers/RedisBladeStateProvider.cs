@@ -16,7 +16,7 @@ public class RedisBladeStateProvider<T>(
 {
 	private readonly IDatabase _redis = redis.GetDatabase();
 
-	private string GetKey() => $"BladeState:{Profile.InstanceName}-{Profile.InstanceId}";
+	private string GetKey() => $"{Profile.InstanceName}:{Profile.InstanceId}";
 
 	public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
