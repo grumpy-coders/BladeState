@@ -2,10 +2,11 @@ using Microsoft.Extensions.DependencyInjection;
 using BladeState.Cryptography;
 using BladeState.Models;
 using BladeState.Providers;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Data.Common;
 using BladeState.Enums;
+using Microsoft.EntityFrameworkCore;
+using BladeState.Data.EntityFrameworkCore;
 
 namespace BladeState;
 
@@ -73,15 +74,18 @@ public static class BladeStateServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddEfCoreBladeState<TState, TDbContext>(
+    public static IServiceCollection AddEfCoreBladeState<TState>(
         this IServiceCollection services,
-        BladeStateProfile profile)
+        BladeStateProfile profile,
+        Action<DbContextOptionsBuilder> optionsAction)
         where TState : class, new()
-        where TDbContext : DbContext
     {
         services.AddSingleton(profile);
         services.AddSingleton(sp => new BladeStateCryptography(profile.EncryptionKey));
-        services.AddScoped<EfCoreBladeStateProvider<TState, TDbContext>>();
+
+        services.AddDbContext<BladeStateDbContext>(optionsAction);
+
+        services.AddScoped(sp => new EfCoreBladeStateProvider<TState>(sp.GetRequiredService<BladeStateDbContext>(), sp.GetRequiredService<BladeStateCryptography>(), sp.GetRequiredService<BladeStateProfile>()));
 
         return services;
     }

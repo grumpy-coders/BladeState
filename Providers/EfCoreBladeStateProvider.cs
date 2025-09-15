@@ -2,21 +2,21 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BladeState.Cryptography;
+using BladeState.Data.EntityFrameworkCore;
 using BladeState.Enums;
 using BladeState.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BladeState.Providers;
 
-public class EfCoreBladeStateProvider<TState, TDbContext>(
-    TDbContext dbContext,
+public class EfCoreBladeStateProvider<TState>(
+    BladeStateDbContext bladeStateDbContext,
     BladeStateCryptography bladeStateCryptography,
     BladeStateProfile bladeStateProfile
 ) : BladeStateProvider<TState>(bladeStateCryptography, bladeStateProfile)
     where TState : class, new()
-    where TDbContext : DbContext
 {
-    private readonly TDbContext _dbContext = dbContext;
+    private readonly BladeStateDbContext _dbContext = bladeStateDbContext;
 
     public override async Task<TState> LoadStateAsync(CancellationToken cancellationToken = default)
     {
