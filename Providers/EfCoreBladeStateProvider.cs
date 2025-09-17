@@ -10,13 +10,13 @@ using Microsoft.EntityFrameworkCore;
 namespace BladeState.Providers;
 
 public class EfCoreBladeStateProvider<TState>(
-    BladeStateDbContext bladeStateDbContext,
+    IDbContextFactory<BladeStateDbContext> bladeStateDbContextFactory,
     BladeStateCryptography bladeStateCryptography,
     BladeStateProfile bladeStateProfile
 ) : BladeStateProvider<TState>(bladeStateCryptography, bladeStateProfile)
     where TState : class, new()
 {
-    private readonly BladeStateDbContext _dbContext = bladeStateDbContext;
+    private readonly IDbContextFactory<BladeStateDbContext> _bladeStateDbContextFactory = bladeStateDbContextFactory;
 
     public override async Task<TState> LoadStateAsync(CancellationToken cancellationToken = default)
     {
@@ -27,9 +27,11 @@ public class EfCoreBladeStateProvider<TState>(
 
             await StartTimeoutTaskAsync(cancellationToken);
 
-            await _dbContext.Database.EnsureCreatedAsync(cancellationToken);
+            await using BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
 
-            BladeStateEntity entity = await _dbContext.Set<BladeStateEntity>()
+            await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+
+            BladeStateEntity entity = await dbContext.Set<BladeStateEntity>()
                 .FirstAsync(e => e.InstanceId == Profile.InstanceId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -80,7 +82,9 @@ public class EfCoreBladeStateProvider<TState>(
                 data = JsonSerializer.Serialize(state);
             }
 
-            DbSet<BladeStateEntity> set = _dbContext.Set<BladeStateEntity>();
+            await using BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
+
+            DbSet<BladeStateEntity> set = dbContext.Set<BladeStateEntity>();
             try
             {
                 BladeStateEntity entity = await set
@@ -100,7 +104,7 @@ public class EfCoreBladeStateProvider<TState>(
                 await set.AddAsync(entity, cancellationToken).ConfigureAwait(false);
             }
 
-            await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await StartTimeoutTaskAsync(cancellationToken);
             OnStateChange(ProviderEventType.Save);
         }
@@ -117,7 +121,9 @@ public class EfCoreBladeStateProvider<TState>(
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            DbSet<BladeStateEntity> set = _dbContext.Set<BladeStateEntity>();
+            await using BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
+
+            DbSet<BladeStateEntity> set = dbContext.Set<BladeStateEntity>();
             try
             {
                 BladeStateEntity entity = await set
@@ -125,7 +131,7 @@ public class EfCoreBladeStateProvider<TState>(
                     .ConfigureAwait(false);
 
                 set.Remove(entity);
-                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
             catch
             {

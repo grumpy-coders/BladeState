@@ -83,9 +83,17 @@ public static class BladeStateServiceCollectionExtensions
         services.AddSingleton(profile);
         services.AddSingleton(sp => new BladeStateCryptography(profile.EncryptionKey));
 
-        services.AddDbContext<BladeStateDbContext>(optionsAction);
+        services.AddDbContextFactory<BladeStateDbContext>(
+            optionsAction,
+            ServiceLifetime.Scoped
+        );
 
-        services.AddScoped(sp => new EfCoreBladeStateProvider<TState>(sp.GetRequiredService<BladeStateDbContext>(), sp.GetRequiredService<BladeStateCryptography>(), sp.GetRequiredService<BladeStateProfile>()));
+        services.AddScoped(sp =>
+            new EfCoreBladeStateProvider<TState>(
+                sp.GetRequiredService<IDbContextFactory<BladeStateDbContext>>(),
+                sp.GetRequiredService<BladeStateCryptography>(),
+                sp.GetRequiredService<BladeStateProfile>()));
+
 
         return services;
     }

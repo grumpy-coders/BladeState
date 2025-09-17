@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
 
     <!-- NuGet Package Identity -->
@@ -23,8 +23,8 @@
     </PackageTags>
 
     <!-- Repo & License -->
-    <RepositoryUrl>https://github.com/doomfaller/BladeState</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/doomfaller/BladeState</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/grumpy-coders/BladeState</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/grumpy-coders/BladeState</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
