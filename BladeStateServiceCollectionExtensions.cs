@@ -75,25 +75,24 @@ public static class BladeStateServiceCollectionExtensions
     }
 
     public static IServiceCollection AddEfCoreBladeState<TState>(
-        this IServiceCollection services,
-        BladeStateProfile profile,
-        Action<DbContextOptionsBuilder> optionsAction)
-        where TState : class, new()
+                this IServiceCollection services,
+                BladeStateProfile profile,
+                Action<DbContextOptionsBuilder> optionsAction)
+                where TState : class, new()
     {
+        // Profile + crypto = safe as singleton
         services.AddSingleton(profile);
         services.AddSingleton(sp => new BladeStateCryptography(profile.EncryptionKey));
 
-        services.AddDbContextFactory<BladeStateDbContext>(
-            optionsAction,
-            ServiceLifetime.Scoped
-        );
+        // Use DbContextFactory so providers always get a fresh context
+        services.AddDbContextFactory<BladeStateDbContext>(optionsAction);
 
+        // Provider depends on DbContextFactory (not DbContext directly)
         services.AddScoped(sp =>
             new EfCoreBladeStateProvider<TState>(
                 sp.GetRequiredService<IDbContextFactory<BladeStateDbContext>>(),
                 sp.GetRequiredService<BladeStateCryptography>(),
                 sp.GetRequiredService<BladeStateProfile>()));
-
 
         return services;
     }

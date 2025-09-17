@@ -1,21 +1,27 @@
 using BladeState.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace BladeState.Data.EntityFrameworkCore;
-
-public class BladeStateDbContext : DbContext
+namespace BladeState.Data.EntityFrameworkCore
 {
-
-    public BladeStateDbContext(DbContextOptions<BladeStateDbContext> options)
-      : base(options)
+    public class BladeStateDbContext : DbContext
     {
-    }
-    
-    public DbSet<BladeStateEntity> BladeState { get; set; } = default;
+        public BladeStateDbContext(DbContextOptions<BladeStateDbContext> options)
+            : base(options)
+        {
+        }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<BladeStateEntity>()
-            .HasKey(e => e.InstanceId);
+        public DbSet<BladeStateEntity> BladeState { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // Configure BladeStateEntity schema
+            modelBuilder.Entity<BladeStateEntity>(entity =>
+            {
+                entity.HasKey(e => e.InstanceId);
+                entity.Property(e => e.StateData).IsRequired();
+            });
+
+            base.OnModelCreating(modelBuilder);
+        }
     }
 }

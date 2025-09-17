@@ -28,7 +28,6 @@ public class EfCoreBladeStateProvider<TState>(
             await StartTimeoutTaskAsync(cancellationToken);
 
             await using BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
-
             await dbContext.Database.EnsureCreatedAsync(cancellationToken);
 
             BladeStateEntity entity = await dbContext.Set<BladeStateEntity>()
