@@ -8,13 +8,9 @@
 
 ## Yours truly, ~doom
 
-#There is a known issue with DI/for EFCore Provider, I will be releasing a fix asap
+## What's new in version 1.0.6?
 
-## What's new in version 1.0.3?
-
-- More DI syntax for built-in providers (services.AddSqlBladeState(), .AddEfCoreBladeState())
-- Cleaned up and fixed some issues with SQL and EFCore Providers
-- Added support for additional sql types through sql provider
+- Performance and stability enhancements
 
 [![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat&logo=nuget)](https://www.nuget.org/packages/BladeState/)
