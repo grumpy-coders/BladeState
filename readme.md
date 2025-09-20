@@ -8,7 +8,7 @@ DOING OUR BEST TO GET FEATURES AND FIXES (IF NEEDED) OUT ASAP
 
 THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO
 
-##What's on the road map? 
+## What's on the road map? 
 -FileBladeStateProvider
 -File State viewer app
 -Performance and Enhancements with Change Event
