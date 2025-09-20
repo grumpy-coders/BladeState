@@ -1,12 +1,18 @@
 # BladeState
 
-## THIS PROJECT IS ACTIVELY BEING DEVELOPED, AND IS BLEEDING EDGE
+## THIS PROJECT IS ACTIVELY BEING DEVELOPED, AND PROVIDED 'AS IS'
+
+DOING OUR BEST TO GET FEATURES AND FIXES (IF NEEDED) OUT ASAP
 
 ## I AM ACTIVELY UPDATING ON NUGET AND README, HMU FOR FEATURE REQUESTS -> doomfaller@gmail.com
 
-## THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO
+THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO
 
-## Yours truly, ~doom
+##What's on the road map? 
+-FileBladeStateProvider
+-File State viewer app
+-Performance and Enhancements with Change Event
+-Enterprise and Large Team Licensing
 
 ## What's new in version 1.0.6?
 
