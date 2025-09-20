@@ -1,4 +1,4 @@
-# ⚔️ BladeState ⚔️
+# 🗡️ BladeState
 
 ## This project is being developed and provided 'AS IS'
 
