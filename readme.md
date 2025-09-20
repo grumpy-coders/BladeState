@@ -1,6 +1,6 @@
 # BladeState
 
-## THIS PROJECT IS ACTIVELY BEING Developed AND PROVIDED 'AS IS'
+## This project is being developed and provided 'AS IS'
 
 DOING OUR BEST TO GET FEATURES AND FIXES (IF NEEDED) OUT ASAP
 
