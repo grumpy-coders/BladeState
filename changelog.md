@@ -1,10 +1,26 @@
-## Version 1.0.7
-- Added this change log
-- Added Licensing Support
-- License changes for Large Teams and Enterprise users
-- Namespace updates (breaking change for GrumpyCoders prefix)
-- File Provider initial support
-- Initial Support for Save Format to save state data in other formats than Json (for now this only works with File Provider)
-- Added a FileProviderOptions to BladeStateProfile to handle specific properties that can be used for the File Provider
-- Added a SqlProviderOptions for same reasons above
-- readme clarity fixes
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [1.0.7] - 2025-09-21
+### Added
+- This change log file.
+- Licensing support.
+- File Provider initial support.
+- Initial support for Save Format to persist state data in formats other than JSON (currently only implemented for File Provider).
+- `FileProviderOptions` added to `BladeStateProfile` to handle provider-specific configuration.
+- `SqlProviderOptions` added to `BladeStateProfile` for provider-specific configuration.
+
+### Changed
+- Namespace updates (**breaking change**: now prefixed with `GrumpyCoders`).
+- File and naming consistency
+- Improved README clarity.
+
+### Licensing
+- License changes for Large Teams and Enterprise users.
+
+---
