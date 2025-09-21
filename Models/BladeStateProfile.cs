@@ -1,4 +1,5 @@
 using System;
+using BladeState.Models.ProviderOptions;
 namespace BladeState.Models;
 
 public class BladeStateProfile
@@ -34,4 +35,7 @@ public class BladeStateProfile
     /// When not passed, Blade State will generate a unique key automatically once per Blade State instance.
     /// </summary>
     public string EncryptionKey { get; set; } = string.Empty;
+
+    public FileProviderOptions FileProviderOptions { get; set; } = new();
+    public SqlProviderOptions SqlProviderOptions { get; set; } = new();
 }
