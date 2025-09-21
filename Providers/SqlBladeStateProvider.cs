@@ -19,7 +19,7 @@ public class SqlBladeStateProvider<T>(
 {
     private readonly Func<DbConnection> _connectionFactory = connectionFactory;
 
-    private bool _tableExists { get; set; }
+    private bool TableExists { get; set; }
 
     public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
@@ -199,7 +199,7 @@ public class SqlBladeStateProvider<T>(
 
     private async Task EnsureTableExistsAsync(CancellationToken cancellationToken)
     {
-        if (_tableExists)
+        if (TableExists)
             return;
 
         string sql = sqlType switch
@@ -241,7 +241,7 @@ public class SqlBladeStateProvider<T>(
         try
         {
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            _tableExists = true;
+            TableExists = true;
         }
         catch (Exception exception)
         {
