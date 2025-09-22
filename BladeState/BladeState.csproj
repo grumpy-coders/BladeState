@@ -29,8 +29,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="" />
-    <None Include="CHANGELOG.md" Pack="true" PackagePath="" />
+      <None Include="../README.md" Pack="true" PackagePath="" />
+    <None Include="../CHANGELOG.md" Pack="true" PackagePath="" />
     <None Include="Assets/Graphics/logo.png" Pack="true" PackagePath="Assets/Graphics/" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.11" />    

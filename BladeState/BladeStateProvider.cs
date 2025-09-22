@@ -26,7 +26,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	private readonly SemaphoreSlim _timeoutLock = new(1, 1);
 	private bool _disposed;
 
-	public virtual event EventHandler<BladeStateProviderEventArgs<T>> StateChanged = delegate { };
+	public event EventHandler<BladeStateProviderEventArgs<T>> StateChanged = delegate { };
 
 	/// <summary>
 	/// Fires when a change occurs to the State. Such as after the State is loaded, saved, cleared. Can be used to update components, screens, force actions to occur, etc.
@@ -149,7 +149,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		await _timeoutLock.WaitAsync(cancellationToken);
 		try
 		{
-			_timeoutCancellationTokenSource.Cancel();
+			await _timeoutCancellationTokenSource.CancelAsync();
 			_timeoutCancellationTokenSource.Dispose();
 			_timeoutCancellationTokenSource = new CancellationTokenSource();
 
@@ -204,7 +204,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 			await _timeoutLock.WaitAsync();
 			try
 			{
-				_timeoutCancellationTokenSource.Cancel();
+				await _timeoutCancellationTokenSource.CancelAsync();
 				_timeoutCancellationTokenSource.Dispose();
 			}
 			finally
