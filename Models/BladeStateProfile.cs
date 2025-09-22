@@ -34,4 +34,10 @@ public class BladeStateProfile
     /// When not passed, Blade State will generate a unique key automatically once per Blade State instance.
     /// </summary>
     public string EncryptionKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The base folder to use for the File provider. 
+    /// If not set, the system's temp folder is used.
+    /// </summary>
+    public string BaseFolder { get; set; } = Environment.GetEnvironmentVariable("tmp");
 }
