@@ -1,8 +1,11 @@
-using BladeState.Enums;
+using GrumpyCoders.BladeState.Enums;
 
-namespace BladeState.Models.ProviderOptions;
+namespace GrumpyCoders.BladeState.Models.ProviderOptions;
 
 public class SqlProviderOptions
 {
-    public SqlType SqlType = SqlType.None;
+    /// <summary>
+    /// When set to SqlType.None it will use ANSI SQL syntax (agnostic to data backend)
+    /// </summary>
+    public SqlType SqlType { get; set; } = SqlType.None;
 }

@@ -1,4 +1,4 @@
-namespace BladeState.Models;
+namespace GrumpyCoders.BladeState.Models;
 
 public class BladeStateEntity
 {

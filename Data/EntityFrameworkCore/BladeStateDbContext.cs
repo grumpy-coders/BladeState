@@ -1,7 +1,7 @@
-using BladeState.Models;
+using GrumpyCoders.BladeState.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace BladeState.Data.EntityFrameworkCore
+namespace GrumpyCoders.BladeState.Data.EntityFrameworkCore
 {
     public class BladeStateDbContext : DbContext
     {

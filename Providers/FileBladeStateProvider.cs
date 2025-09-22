@@ -2,10 +2,10 @@ using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using BladeState.Enums;
-using BladeState.Models;
+using GrumpyCoders.BladeState.Enums;
+using GrumpyCoders.BladeState.Models;
 
-namespace BladeState.Providers
+namespace GrumpyCoders.BladeState.Providers
 {
     public class FileSystemBladeStateProvider<TState> : BladeStateProvider<TState> where TState : class, new()
     {
@@ -16,12 +16,10 @@ namespace BladeState.Providers
         {
             try
             {
-                if (profile.FileOptions.UseTemp)
-                    _directory = Path.Combine(Path.GetTempPath(), "BladeState");
-                else if (!string.IsNullOrWhiteSpace(profile.FileOptions.BasePath))
-                    _directory = profile.FileOptions.BasePath;
+                if (string.IsNullOrWhiteSpace(profile.FileProviderOptions.BasePath))
+                    _directory = Path.Combine(Path.GetTempPath(), Profile.InstanceName);
                 else
-                    _directory = Path.Combine(AppContext.BaseDirectory, "BladeState");
+                    _directory = Path.Combine(Profile.FileProviderOptions.BasePath, Profile.InstanceName);
 
                 Directory.CreateDirectory(_directory);
             }
@@ -32,22 +30,20 @@ namespace BladeState.Providers
             }
         }
 
-        private string GetFilePath(string key) => Path.Combine(_directory, $"{key}.json");
+        private string GetFilePath(string instanceId) => Path.Combine(_directory, $"{instanceId}.json");
 
         public override async Task SaveStateAsync(TState state, CancellationToken cancellationToken = default)
         {
+
+            if (Profile.AutoEncrypt)
+            {
+                await EncryptStateAsync(cancellationToken);
+                await File.WriteAllTextAsync(GetFilePath(Profile.InstanceId), json, cancellationToken);
+            }
+
             try
             {
-                var json = JsonSerializer.Serialize(state, Profile.JsonOptions);
-
-                try
-                {
-                    json = CipherState.Encrypt(json);
-                }
-                catch
-                {
-                    // If no cipher, just pass through unmodified
-                }
+                var json = JsonSerializer.Serialize(state, Profile);
 
                 var filePath = GetFilePath(Profile.StateKey);
                 await File.WriteAllTextAsync(filePath, json, cancellationToken);

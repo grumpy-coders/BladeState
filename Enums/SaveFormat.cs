@@ -1,4 +1,4 @@
-namespace BladeState.Enums;
+namespace GrumpyCoders.BladeState.Enums;
 
 public enum SaveFormat
 {

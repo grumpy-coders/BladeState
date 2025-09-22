@@ -4,17 +4,16 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using BladeState.Cryptography;
-using BladeState.Enums;
-using BladeState.Models;
+using GrumpyCoders.BladeState.Cryptography;
+using GrumpyCoders.BladeState.Enums;
+using GrumpyCoders.BladeState.Models;
 
-namespace BladeState.Providers;
+namespace GrumpyCoders.BladeState.Providers;
 
 public class SqlBladeStateProvider<T>(
     Func<DbConnection> connectionFactory,
     BladeStateCryptography bladeStateCryptography,
-    BladeStateProfile bladeStateProfile,
-    SqlType sqlType = SqlType.None
+    BladeStateProfile bladeStateProfile
 ) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
     private readonly Func<DbConnection> _connectionFactory = connectionFactory;
@@ -36,22 +35,23 @@ public class SqlBladeStateProvider<T>(
         if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
             throw new InvalidOperationException("The instance name is invalid");
 
-        string sql = sqlType switch
+        string sql = Profile.SqlProviderOptions.SqlType switch
         {
             SqlType.SqlServer => $"SELECT TOP 1 Data FROM [{Profile.InstanceName}] WHERE InstanceId = @InstanceId",
             SqlType.Postgres => $"SELECT Data FROM \"{Profile.InstanceName}\" WHERE \"InstanceId\" = @InstanceId LIMIT 1",
             SqlType.MySql => $"SELECT Data FROM `{Profile.InstanceName}` WHERE InstanceId = @InstanceId LIMIT 1",
             SqlType.Sqlite => $"SELECT Data FROM \"{Profile.InstanceName}\" WHERE InstanceId = @InstanceId LIMIT 1",
+            SqlType.None => $"SELECT Data FROM \"{Profile.InstanceName}\" WHERE InstanceId = @InstanceId FETCH FIRST 1 ROWS ONLY",
             _ => throw new NotSupportedException("SqlType is invalid")
         };
 
         await using DbCommand command = connection.CreateCommand();
         command.CommandText = sql;
 
-        DbParameter p = command.CreateParameter();
-        p.ParameterName = "@InstanceId";
-        p.Value = Profile.InstanceId;
-        command.Parameters.Add(p);
+        DbParameter instanceIdParameter = command.CreateParameter();
+        instanceIdParameter.ParameterName = "@InstanceId";
+        instanceIdParameter.Value = Profile.InstanceId;
+        command.Parameters.Add(instanceIdParameter);
 
         string data = string.Empty;
 
@@ -111,7 +111,7 @@ public class SqlBladeStateProvider<T>(
         if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
             throw new InvalidOperationException("The instance name is invalid");
 
-        string sql = sqlType switch
+        string sql = Profile.SqlProviderOptions.SqlType switch
         {
             SqlType.SqlServer => $@"
             MERGE [{Profile.InstanceName}] AS target
@@ -133,6 +133,13 @@ public class SqlBladeStateProvider<T>(
             SqlType.Sqlite => $@"
             INSERT OR REPLACE INTO ""{Profile.InstanceName}"" (InstanceId, Data)
             VALUES (@InstanceId, @Data);",
+
+            SqlType.None => $@"
+            MERGE [{Profile.InstanceName}] AS target
+            USING (SELECT @InstanceId AS InstanceId, @Data AS Data) AS source
+            ON target.InstanceId = source.InstanceId
+            WHEN MATCHED THEN UPDATE SET Data = source.Data
+            WHEN NOT MATCHED THEN INSERT (InstanceId, Data) VALUES (source.InstanceId, source.Data);",
 
             _ => throw new NotSupportedException("Unsupported SQL type")
         };
@@ -202,7 +209,7 @@ public class SqlBladeStateProvider<T>(
         if (_tableExists)
             return;
 
-        string sql = sqlType switch
+        string sql = Profile.SqlProviderOptions.SqlType switch
         {
             SqlType.SqlServer => $@"
             IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{Profile.InstanceName}' AND xtype='U')

@@ -2,12 +2,12 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using BladeState.Cryptography;
-using BladeState.Enums;
-using BladeState.Events;
-using BladeState.Models;
+using GrumpyCoders.BladeState.Cryptography;
+using GrumpyCoders.BladeState.Enums;
+using GrumpyCoders.BladeState.Events;
+using GrumpyCoders.BladeState.Models;
 
-namespace BladeState;
+namespace GrumpyCoders.BladeState;
 
 /// <summary>
 /// Defines persistence for a given state type with async timeout handling.
