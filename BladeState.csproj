@@ -3,14 +3,14 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.6</Version>
-    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <Version>1.0.7</Version>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
 
     <!-- NuGet Package Identity -->
     <PackageId>BladeState</PackageId>
-    <Authors>doomfaller,lorddurus</Authors>
-    <Company>grumpy-coders</Company>
-     <PackageIcon>assets/gfx/logo.png</PackageIcon>
+    <Authors>Grumpy-Coders</Authors>
+    <Company>Grumpy-Coders</Company>
+     <PackageIcon>Assets/Graphics/logo.png</PackageIcon>
 
     <!-- Discoverability -->
     <Description>
@@ -29,8 +29,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="readme.md" Pack="true" PackagePath="" />
-    <None Include="assets/gfx/logo.png" Pack="true" PackagePath="assets/gfx/" />
+    <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="CHANGELOG.md" Pack="true" PackagePath="" />
+    <None Include="Assets/Graphics/logo.png" Pack="true" PackagePath="Assets/Graphics/" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.11" />    
   </ItemGroup>

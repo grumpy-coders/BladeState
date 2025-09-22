@@ -6,5 +6,6 @@ public enum ProviderEventType
     Load = 1,
     Save = 2,
     Clear = 3,
-    Other = 4
+    Other = 4,
+    Error = 5
 }

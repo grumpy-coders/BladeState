@@ -1,4 +1,5 @@
 using System;
+using BladeState.Models.ProviderOptions;
 namespace BladeState.Models;
 
 public class BladeStateProfile
@@ -35,9 +36,6 @@ public class BladeStateProfile
     /// </summary>
     public string EncryptionKey { get; set; } = string.Empty;
 
-    /// <summary>
-    /// The base folder to use for the File provider. 
-    /// If not set, the system's temp folder is used.
-    /// </summary>
-    public string BaseFolder { get; set; } = Environment.GetEnvironmentVariable("tmp");
+    public FileProviderOptions FileProviderOptions { get; set; } = new();
+    public SqlProviderOptions SqlProviderOptions { get; set; } = new();
 }
