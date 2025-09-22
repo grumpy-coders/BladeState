@@ -13,7 +13,7 @@ public class BladeStateProfile
     /// The name of a single Blade State instance. This is usually a static value for an application, can be used to group Blade State data.
     /// For ex: prefix keys in Redis, name the root table in a SQL database, or more generally, a friendly field used to identify Blade State data stored somewhere.
     /// </summary>
-    public string InstanceName { get; set; } = "BladeState";
+    public string InstanceName { get; set; } = Constants.Constants.BladeStateName;
 
     /// <summary>
     /// Times out the instance of Blade State when no data action or access has occurred. 

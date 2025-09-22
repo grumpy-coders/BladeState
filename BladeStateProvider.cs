@@ -33,19 +33,22 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	/// </summary>
 	/// <param name="eventType">The ProviderEventType to denote the type of change to the state</param>
 	/// <returns></returns>
-	protected virtual void OnStateChange(ProviderEventType eventType = ProviderEventType.None) =>
-		StateChanged(this, new BladeStateProviderEventArgs<T>(Profile.InstanceId, State, eventType));
+	protected virtual void OnStateChange(ProviderEventType eventType = ProviderEventType.None) => StateChanged(this, new BladeStateProviderEventArgs<T>(Profile.InstanceId, State, eventType));
 
 
 	public virtual async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
+		{
 			return State;
+		}
 
 		try
 		{
 			if (Profile.AutoEncrypt)
+			{
 				await DecryptStateAsync(cancellationToken);
+			}
 		}
 		catch
 		{

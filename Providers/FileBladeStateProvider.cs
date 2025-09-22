@@ -2,95 +2,135 @@ using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using BladeState.Cryptography;
 using BladeState.Enums;
 using BladeState.Models;
 
 namespace BladeState.Providers
 {
-    public class FileSystemBladeStateProvider<TState> : BladeStateProvider<TState> where TState : class, new()
-    {
-        private readonly string _directory;
+	public class FileSystemBladeStateProvider<TState> : BladeStateProvider<TState> where TState : class, new()
+	{
+		private readonly string _directory;
 
-        public FileSystemBladeStateProvider(BladeStateProfile profile)
-            : base(profile)
-        {
-            try
-            {
-                if (profile.FileOptions.UseTemp)
-                    _directory = Path.Combine(Path.GetTempPath(), "BladeState");
-                else if (!string.IsNullOrWhiteSpace(profile.FileOptions.BasePath))
-                    _directory = profile.FileOptions.BasePath;
-                else
-                    _directory = Path.Combine(AppContext.BaseDirectory, "BladeState");
+		public FileSystemBladeStateProvider(BladeStateCryptography cryptography, BladeStateProfile profile) : base(cryptography, profile)
+		{
+			try
+			{
+				if (string.IsNullOrWhiteSpace(profile.FileProviderOptions.BasePath))
+				{
+					_directory = Path.Combine(Path.GetTempPath(), Constants.Constants.BladeStateName);
+				}
+				else if (!string.IsNullOrWhiteSpace(profile.FileProviderOptions.BasePath))
+				{
+					_directory = profile.FileProviderOptions.BasePath;
+				}
 
-                Directory.CreateDirectory(_directory);
-            }
-            catch
-            {
-                OnStateChange(ProviderEventType.Error);
-                throw;
-            }
-        }
+				if (!Directory.Exists(_directory))
+				{
+					Directory.CreateDirectory(_directory);
+				}
 
-        private string GetFilePath(string key) => Path.Combine(_directory, $"{key}.json");
+			}
+			catch
+			{
+				OnStateChange(ProviderEventType.Error);
+				throw;
+			}
+		}
 
-        public override async Task SaveStateAsync(TState state, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                var json = JsonSerializer.Serialize(state, Profile.JsonOptions);
+		private string GetFilePath(string key) => Path.Combine(_directory, $"{key}.json");
 
-                try
-                {
-                    json = CipherState.Encrypt(json);
-                }
-                catch
-                {
-                    // If no cipher, just pass through unmodified
-                }
+		public override async Task SaveStateAsync(TState state, CancellationToken cancellationToken = default)
+		{
+			try
+			{
+				CipherState = JsonSerializer.Serialize(state);
 
-                var filePath = GetFilePath(Profile.StateKey);
-                await File.WriteAllTextAsync(filePath, json, cancellationToken);
+				if (Profile.AutoEncrypt)
+				{
+					await EncryptStateAsync(cancellationToken);
+				}
 
-                OnStateChange(ProviderEventType.Saved);
-            }
-            catch
-            {
-                OnStateChange(ProviderEventType.Failed);
-                throw;
-            }
-        }
+				string filePath = GetFilePath(Profile.InstanceId);
+				await File.WriteAllTextAsync(filePath, CipherState, cancellationToken);
+				OnStateChange(ProviderEventType.Save);
+			}
+			catch
+			{
+				OnStateChange(ProviderEventType.Error);
+				throw;
+			}
+		}
 
-        public override async Task<TState> LoadStateAsync(CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                var filePath = GetFilePath(Profile.StateKey);
+		public override async Task<TState> LoadStateAsync(CancellationToken cancellationToken = default)
+		{
+			try
+			{
+				string filePath = GetFilePath(Profile.InstanceId);
 
-                if (!File.Exists(filePath))
-                    return new TState();
+				if (!File.Exists(filePath))
+				{
+					return new TState();
+				}
 
-                var json = await File.ReadAllTextAsync(filePath, cancellationToken);
+				CipherState = await File.ReadAllTextAsync(filePath, cancellationToken);
+				if (string.IsNullOrWhiteSpace(CipherState))
+				{
+					return new TState();
+				}
 
-                try
-                {
-                    json = CipherState.Decrypt(json);
-                }
-                catch
-                {
-                    // If no cipher, fallback to plain JSON
-                }
+				if (Profile.AutoEncrypt)
+				{
+					await DecryptStateAsync(cancellationToken);
+				}
+				var state = JsonSerializer.Deserialize<TState>(CipherState) ?? new TState();
+				OnStateChange(ProviderEventType.Load);
+				return state;
+			}
+			catch
+			{
+				OnStateChange(ProviderEventType.Error);
+				throw;
+			}
+		}
 
-                var state = JsonSerializer.Deserialize<TState>(json, Profile.JsonOptions) ?? new TState();
+		public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
+		{
+			try
+			{
+				string filePath = GetFilePath(Profile.InstanceId);
 
-                OnStateChange(ProviderEventType.Loaded);
-                return state;
-            }
-            catch
-            {
-                OnStateChange(ProviderEventType.Failed);
-                throw;
-            }
-        }
-    }
+				if (File.Exists(filePath))
+				{
+					File.Delete(filePath);
+				}
+
+				await Task.CompletedTask;
+				OnStateChange(ProviderEventType.Clear);
+			}
+			catch
+			{
+				OnStateChange(ProviderEventType.Error);
+				throw;
+			}
+		}
+
+		/// <summary>
+		/// Async disposal hook: cleanup persisted state before disposal.
+		/// </summary>
+		protected override async ValueTask DisposeAsyncCore()
+		{
+			try
+			{
+				await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+			}
+			catch
+			{
+				// swallow or log exceptions, since Dispose must not throw
+			}
+			await base.DisposeAsyncCore().ConfigureAwait(false);
+		}
+
+	}
 }
+
