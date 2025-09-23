@@ -1,5 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using BladeState;
 using BladeState.Cryptography;
 using BladeState.Models;
 
@@ -20,6 +21,7 @@ public class TestBase
 		{
 			InstanceId = $"{DateTime.Now:yyyyMMdd-hh-ss}-{Guid.NewGuid()}",
 			AutoEncrypt = true,
+			AutoClearOnDispose = true,
 			FileProviderOptions = new()
 			{
 				BasePath = Path.Combine(Path.GetTempPath(), "BladeStateTests")

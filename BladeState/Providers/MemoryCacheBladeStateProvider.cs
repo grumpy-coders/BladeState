@@ -107,7 +107,10 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 	{
 		try
 		{
-			await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+			if (Profile.AutoClearOnDispose)
+			{
+				await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+			}
 		}
 		catch
 		{

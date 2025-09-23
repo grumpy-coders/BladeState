@@ -31,6 +31,11 @@ public class BladeStateProfile
     public bool AutoEncrypt { get; set; } = true;
 
     /// <summary>
+    /// When true, the state is cleared from the provider when DisposeAsync() is called.
+    /// </summary>
+    public bool AutoClearOnDispose { get; set; } = true;
+
+    /// <summary>
     /// The encryption key to use for Blade State's cryptography.
     /// When not passed, Blade State will generate a unique key automatically once per Blade State instance.
     /// </summary>

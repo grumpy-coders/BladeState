@@ -91,7 +91,10 @@ public class RedisBladeStateProvider<T>(
 	{
 		try
 		{
-			await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+			if (Profile.AutoClearOnDispose)
+			{
+				await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+			}
 		}
 		catch
 		{
