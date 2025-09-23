@@ -1,4 +1,5 @@
 using System;
+using BladeState.Models.ProviderOptions;
 using GrumpyCoders.BladeState.Models.ProviderOptions;
 namespace GrumpyCoders.BladeState.Models;
 
@@ -13,7 +14,7 @@ public class BladeStateProfile
     /// The name of a single Blade State instance. This is usually a static value for an application, can be used to group Blade State data.
     /// For ex: prefix keys in Redis, name the root table in a SQL database, or more generally, a friendly field used to identify Blade State data stored somewhere.
     /// </summary>
-    public string InstanceName { get; set; } = "BladeState";
+    public string InstanceName { get; set; } = Constants.Constants.BladeStateName;
 
     /// <summary>
     /// Times out the instance of Blade State when no data action or access has occurred. 
@@ -29,6 +30,11 @@ public class BladeStateProfile
     /// Enables Blade State's cryptography automatically. Data is then saved in a provider ciphered then retrieved deciphered.
     /// </summary>
     public bool AutoEncrypt { get; set; } = true;
+
+    /// <summary>
+    /// When true, the state is cleared from the provider when DisposeAsync() is called.
+    /// </summary>
+    public bool AutoClearOnDispose { get; set; } = true;
 
     /// <summary>
     /// The encryption key to use for Blade State's cryptography.

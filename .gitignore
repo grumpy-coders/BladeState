@@ -1,3 +1,4 @@
 # Ignore build output
 **/bin/
 **/obj/
+**/TestResults/
