@@ -1,8 +1,6 @@
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
-using BladeState;
-using BladeState.Cryptography;
-using BladeState.Models;
+using GrumpyCoders.BladeState.Cryptography;
+using GrumpyCoders.BladeState.Models;
 
 namespace BladeStateTests;
 

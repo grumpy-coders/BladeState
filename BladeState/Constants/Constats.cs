@@ -1,4 +1,4 @@
-namespace BladeState.Constants;
+namespace GrumpyCoders.BladeState.Constants;
 
 public partial class Constants
 {

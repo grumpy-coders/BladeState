@@ -1,9 +1,10 @@
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using BladeState.Cryptography;
-using BladeState.Enums;
-using BladeState.Models;
+using GrumpyCoders.BladeState;
+using GrumpyCoders.BladeState.Cryptography;
+using GrumpyCoders.BladeState.Enums;
+using GrumpyCoders.BladeState.Models;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace BladeState.Providers;
