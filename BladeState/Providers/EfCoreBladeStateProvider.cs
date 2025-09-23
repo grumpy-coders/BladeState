@@ -25,7 +25,7 @@ public class EfCoreBladeStateProvider<TState>(
             if (cancellationToken.IsCancellationRequested)
                 return State;
 
-            await StartTimeoutTaskAsync(cancellationToken);
+            await CheckTimeoutAsync(cancellationToken);
 
             await using BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
             await dbContext.Database.EnsureCreatedAsync(cancellationToken);
@@ -104,7 +104,7 @@ public class EfCoreBladeStateProvider<TState>(
             }
 
             await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            await StartTimeoutTaskAsync(cancellationToken);
+            await CheckTimeoutAsync(cancellationToken);
             OnStateChange(ProviderEventType.Save);
         }
         catch
@@ -140,7 +140,7 @@ public class EfCoreBladeStateProvider<TState>(
             CipherState = string.Empty;
             State = new TState();
 
-            await StartTimeoutTaskAsync(cancellationToken);
+            await CheckTimeoutAsync(cancellationToken);
             OnStateChange(ProviderEventType.Clear);
         }
         catch

@@ -33,7 +33,13 @@ public sealed class FileProviderTests : TestBase
     [TestCleanup]
     public async Task CleanupAsync()
     {
-        // await Provider.DisposeAsync().ConfigureAwait(false);
+        string filePath = Provider.GetFilePath();
+        await Provider.DisposeAsync().ConfigureAwait(false);
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+            Assert.Fail($"State file {filePath} was not deleted on dispose.");
+        }
     }
 
 }

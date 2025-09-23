@@ -26,7 +26,7 @@ public class SqlBladeStateProvider<T>(
         if (cancellationToken.IsCancellationRequested)
             return State;
 
-        await StartTimeoutTaskAsync(cancellationToken);
+        await CheckTimeoutAsync(cancellationToken);
 
         await EnsureTableExistsAsync(cancellationToken);
 
@@ -152,7 +152,7 @@ public class SqlBladeStateProvider<T>(
 
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
-        await StartTimeoutTaskAsync(cancellationToken);
+        await CheckTimeoutAsync(cancellationToken);
         OnStateChange(ProviderEventType.Save);
     }
 
@@ -186,7 +186,7 @@ public class SqlBladeStateProvider<T>(
         CipherState = string.Empty;
         State = new T();
 
-        await StartTimeoutTaskAsync(cancellationToken);
+        await CheckTimeoutAsync(cancellationToken);
         OnStateChange(ProviderEventType.Clear);
     }
 

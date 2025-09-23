@@ -15,7 +15,7 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 		if (cancellationToken.IsCancellationRequested)
 			return State ?? new T();
 
-		await StartTimeoutTaskAsync(cancellationToken);
+		await CheckTimeoutAsync(cancellationToken);
 
 		try
 		{
@@ -75,7 +75,7 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 			// swallow or log serialization/encryption failures
 		}
 
-		await StartTimeoutTaskAsync(cancellationToken);
+		await CheckTimeoutAsync(cancellationToken);
 		OnStateChange(ProviderEventType.Save);
 	}
 
@@ -96,7 +96,7 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 		CipherState = string.Empty;
 		State = new T();
 
-		await StartTimeoutTaskAsync(cancellationToken);
+		await CheckTimeoutAsync(cancellationToken);
 		OnStateChange(ProviderEventType.Clear);
 	}
 
