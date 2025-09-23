@@ -2,7 +2,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace BladeState.Cryptography;
+namespace GrumpyCoders.BladeState.Cryptography;
 
 public class BladeStateCryptography
 {

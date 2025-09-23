@@ -1,12 +1,12 @@
-using BladeState.Cryptography;
-using BladeState.Enums;
-using BladeState.Models;
+using GrumpyCoders.BladeState.Cryptography;
+using GrumpyCoders.BladeState.Enums;
+using GrumpyCoders.BladeState.Models;
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BladeState.Providers;
+namespace GrumpyCoders.BladeState.Providers;
 
 public class RedisBladeStateProvider<T>(
 	IConnectionMultiplexer redis,

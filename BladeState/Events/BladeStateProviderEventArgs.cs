@@ -1,7 +1,7 @@
 using System;
-using BladeState.Enums;
+using GrumpyCoders.BladeState.Enums;
 
-namespace BladeState.Events
+namespace GrumpyCoders.BladeState.Events
 {
     public class BladeStateProviderEventArgs<T>(string instanceId, T state, ProviderEventType eventType) : EventArgs where T : class, new()
     {

@@ -1,6 +1,6 @@
 using System;
-using BladeState.Models.ProviderOptions;
-namespace BladeState.Models;
+using GrumpyCoders.BladeState.Models.ProviderOptions;
+namespace GrumpyCoders.BladeState.Models;
 
 public class BladeStateProfile
 {
@@ -41,6 +41,13 @@ public class BladeStateProfile
     /// </summary>
     public string EncryptionKey { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Profile options specific to FileBladeStateProvider
+    /// </summary>
     public FileProviderOptions FileProviderOptions { get; set; } = new();
+
+    /// <summary>
+    /// Profile options specific to SqlBladeStateProvider
+    /// </summary>
     public SqlProviderOptions SqlProviderOptions { get; set; } = new();
 }

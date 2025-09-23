@@ -1,13 +1,13 @@
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using BladeState.Cryptography;
-using BladeState.Data.EntityFrameworkCore;
-using BladeState.Enums;
-using BladeState.Models;
+using GrumpyCoders.BladeState.Cryptography;
+using GrumpyCoders.BladeState.Data.EntityFrameworkCore;
+using GrumpyCoders.BladeState.Enums;
+using GrumpyCoders.BladeState.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace BladeState.Providers;
+namespace GrumpyCoders.BladeState.Providers;
 
 public class EfCoreBladeStateProvider<TState>(
     IDbContextFactory<BladeStateDbContext> bladeStateDbContextFactory,
@@ -27,7 +27,7 @@ public class EfCoreBladeStateProvider<TState>(
 
             await CheckTimeoutAsync(cancellationToken);
 
-            await using BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
+            await using GrumpyCoders.BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
             await dbContext.Database.EnsureCreatedAsync(cancellationToken);
 
             BladeStateEntity entity = await dbContext.Set<BladeStateEntity>()
@@ -81,7 +81,7 @@ public class EfCoreBladeStateProvider<TState>(
                 data = JsonSerializer.Serialize(state);
             }
 
-            await using BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
+            await using GrumpyCoders.BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
 
             DbSet<BladeStateEntity> set = dbContext.Set<BladeStateEntity>();
             try
@@ -120,7 +120,7 @@ public class EfCoreBladeStateProvider<TState>(
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            await using BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
+            await using GrumpyCoders.BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
 
             DbSet<BladeStateEntity> set = dbContext.Set<BladeStateEntity>();
             try

@@ -1,14 +1,14 @@
 using Microsoft.Extensions.DependencyInjection;
-using BladeState.Cryptography;
-using BladeState.Models;
-using BladeState.Providers;
+using GrumpyCoders.BladeState.Cryptography;
+using GrumpyCoders.BladeState.Models;
+using GrumpyCoders.BladeState.Providers;
 using System;
 using System.Data.Common;
-using BladeState.Enums;
+using GrumpyCoders.BladeState.Enums;
 using Microsoft.EntityFrameworkCore;
-using BladeState.Data.EntityFrameworkCore;
+using GrumpyCoders.BladeState.Data.EntityFrameworkCore;
 
-namespace BladeState;
+namespace GrumpyCoders.BladeState;
 
 public static class BladeStateServiceCollectionExtensions
 {
@@ -63,13 +63,12 @@ public static class BladeStateServiceCollectionExtensions
     public static IServiceCollection AddSqlBladeState<TState>(
         this IServiceCollection services,
         Func<DbConnection> connectionDelegate,
-        BladeStateProfile profile,
-        SqlType sqlType = SqlType.SqlServer)
+        BladeStateProfile profile)
         where TState : class, new()
     {
         services.AddSingleton(profile);
         services.AddSingleton(new BladeStateCryptography(profile.EncryptionKey));
-        services.AddSingleton(sp => new SqlBladeStateProvider<TState>(connectionDelegate, sp.GetRequiredService<BladeStateCryptography>(), sp.GetRequiredService<BladeStateProfile>(), sqlType));
+        services.AddSingleton(sp => new SqlBladeStateProvider<TState>(connectionDelegate, sp.GetRequiredService<BladeStateCryptography>(), sp.GetRequiredService<BladeStateProfile>()));
 
         return services;
     }
