@@ -19,6 +19,7 @@ public sealed class FileProviderTests : TestBase
         try
         {
             await Provider.SaveStateAsync(AppState, CancellationToken);
+            await Provider.SaveStateAsync(AppState, CancellationToken);
             if (!File.Exists(Provider.GetFilePath()))
             {
                 Assert.Fail($"State file {Provider.GetFilePath()} was not created.");

@@ -35,15 +35,8 @@ public class EfCoreBladeStateProvider<TState>(
 
 			try
 			{
-				if (Profile.AutoEncrypt)
-				{
-					CipherState = entity.StateData;
-					await DecryptStateAsync(cancellationToken);
-					OnStateChange(ProviderEventType.Load);
-					return State;
-				}
-
-				State = JsonSerializer.Deserialize<TState>(entity.StateData);
+				string stateData = Profile.AutoEncrypt ? Decrypt(entity.StateData) : entity.StateData;
+				State = JsonSerializer.Deserialize<TState>(stateData);
 				OnStateChange(ProviderEventType.Load);
 				return State;
 			}
@@ -69,17 +62,7 @@ public class EfCoreBladeStateProvider<TState>(
 			if (cancellationToken.IsCancellationRequested)
 				return;
 
-			string data;
-			if (Profile.AutoEncrypt)
-			{
-				await EncryptStateAsync(cancellationToken);
-				data = CipherState;
-			}
-			else
-			{
-				data = JsonSerializer.Serialize(state);
-			}
-
+			string data = Profile.AutoEncrypt ? EncryptState() : JsonSerializer.Serialize(state);
 			await using BladeStateDbContext dbContext = _bladeStateDbContextFactory.CreateDbContext();
 
 			DbSet<BladeStateEntity> set = dbContext.Set<BladeStateEntity>();
@@ -136,7 +119,6 @@ public class EfCoreBladeStateProvider<TState>(
 				// swallow if no match
 			}
 
-			CipherState = string.Empty;
 			State = new TState();
 
 			await CheckTimeoutAsync(cancellationToken);
@@ -144,7 +126,6 @@ public class EfCoreBladeStateProvider<TState>(
 		}
 		catch
 		{
-			CipherState = string.Empty;
 			State = new TState();
 			OnStateChange(ProviderEventType.Clear);
 		}

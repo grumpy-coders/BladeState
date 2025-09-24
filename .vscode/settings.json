@@ -2,7 +2,11 @@
 	"cSpell.words": [
 		"Decryptor",
 		"Encryptor",
-		"finalizer"
+		"finalizer",
+		"NVARCHAR",
+		"retValue",
+		"sysobjects",
+		"xtype"
 	],
 	"window.title": "BladeState"
 }

@@ -10,7 +10,7 @@ using GrumpyCoders.BladeState.Models;
 
 namespace GrumpyCoders.BladeState.Providers;
 
-public class SqlBladeStateProvider<T>(
+public partial class SqlBladeStateProvider<T>(
     Func<DbConnection> connectionFactory,
     BladeStateCryptography bladeStateCryptography,
     BladeStateProfile bladeStateProfile
@@ -70,20 +70,17 @@ public class SqlBladeStateProvider<T>(
         if (string.IsNullOrEmpty(data))
         {
             State = new T();
-            CipherState = string.Empty;
             OnStateChange(ProviderEventType.Load);
             return State;
         }
 
         if (Profile.AutoEncrypt)
         {
-            CipherState = data;
-            await DecryptStateAsync(cancellationToken);
+            data = Decrypt(data);
         }
-        else
-        {
-            State = JsonSerializer.Deserialize<T>(data) ?? new T();
-        }
+
+        State = JsonSerializer.Deserialize<T>(data) ?? new T();
+
 
         OnStateChange(ProviderEventType.Load);
         return State;
@@ -94,21 +91,12 @@ public class SqlBladeStateProvider<T>(
         if (cancellationToken.IsCancellationRequested)
             return;
 
-        string data;
-        if (Profile.AutoEncrypt)
-        {
-            await EncryptStateAsync(cancellationToken);
-            data = CipherState;
-        }
-        else
-        {
-            data = JsonSerializer.Serialize(state);
-        }
+        string data = Profile.AutoEncrypt ? EncryptState() : JsonSerializer.Serialize(state);
 
         await using DbConnection connection = _connectionFactory();
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-        if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
+        if (!LettersAndNumbersRegex().IsMatch(Profile.InstanceName))
             throw new InvalidOperationException("The instance name is invalid");
 
         string sql = Profile.SqlProviderOptions.SqlType switch
@@ -190,9 +178,7 @@ public class SqlBladeStateProvider<T>(
             // swallow or log
         }
 
-        CipherState = string.Empty;
         State = new T();
-
         await CheckTimeoutAsync(cancellationToken);
         OnStateChange(ProviderEventType.Clear);
     }
@@ -255,4 +241,7 @@ public class SqlBladeStateProvider<T>(
             throw new InvalidOperationException($"An error occurred ensuring existence of sql state table. Ex: {exception.Message}");
         }
     }
+
+    [GeneratedRegex(@"^[A-Za-z0-9_]+$")]
+    private static partial Regex LettersAndNumbersRegex();
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using GrumpyCoders.BladeState.Cryptography;
 using GrumpyCoders.BladeState.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace GrumpyCoders.BladeStateTests;
 
@@ -10,6 +11,7 @@ public class TestBase
 	public readonly BladeStateCryptography Cryptography;
 	public readonly BladeStateProfile Profile;
 	public CancellationToken CancellationToken { get; set; } = new();
+	public MemoryCache MemoryCache = new(new MemoryCacheOptions());
 
 	public TestBase()
 	{

@@ -7,6 +7,7 @@ using GrumpyCoders.BladeState.Constants;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
 
 namespace GrumpyCoders.BladeState.Providers;
 
@@ -38,15 +39,18 @@ public class FileSystemBladeStateProvider<TState> : BladeStateProvider<TState> w
 
 	public override async Task SaveStateAsync(TState state, CancellationToken cancellationToken = default)
 	{
+
+		if (cancellationToken.IsCancellationRequested)
+		{
+			return;
+		}
+		await CheckTimeoutAsync(cancellationToken);
+		LastAccessTime = DateTime.Now;
+
 		try
 		{
-			CipherState = JsonSerializer.Serialize(state, _jsonSerializerOptions);
-			if (Profile.AutoEncrypt)
-			{
-				await EncryptStateAsync(cancellationToken);
-			}
-
-			await File.WriteAllTextAsync(_filePath, CipherState, cancellationToken);
+			string cipherText = Profile.AutoEncrypt ? EncryptState() : JsonSerializer.Serialize(state, _jsonSerializerOptions);
+			await File.WriteAllTextAsync(_filePath, cipherText, cancellationToken);
 			OnStateChange(ProviderEventType.Save);
 		}
 		catch
@@ -65,21 +69,19 @@ public class FileSystemBladeStateProvider<TState> : BladeStateProvider<TState> w
 				return new TState();
 			}
 
-			CipherState = await File.ReadAllTextAsync(_filePath, cancellationToken);
-			if (string.IsNullOrWhiteSpace(CipherState))
+			string cipherState = await File.ReadAllTextAsync(_filePath, cancellationToken);
+			if (string.IsNullOrWhiteSpace(cipherState))
 			{
 				return new TState();
 			}
 
 			if (Profile.AutoEncrypt)
 			{
-				await DecryptStateAsync(cancellationToken);
+				cipherState = Decrypt(cipherState);
 			}
-			else
-			{
-				State = JsonSerializer.Deserialize<TState>(CipherState);
-			}
-			CipherState = string.Empty;
+
+			State = JsonSerializer.Deserialize<TState>(cipherState);
+
 			OnStateChange(ProviderEventType.Load);
 			return State;
 		}
