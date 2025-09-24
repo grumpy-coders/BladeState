@@ -55,9 +55,9 @@ BladeState includes multiple built-in providers for persisting state:
 Stores state in in-memory cache for the lifetime of the application.
 
 ```csharp
-using BladeState;
-using BladeState.Models;
-using BladeState.Providers;
+using GrumpyCoders.BladeState;
+using GrumpyCoders.BladeState.Models;
+using GrumpyCoders.BladeState.Providers;
 
 builder.Services.AddMemoryCacheBladeState<MyState>();
 ```
@@ -79,9 +79,9 @@ CREATE TABLE BladeState (
 
 ```csharp
 using Microsoft.Data.SqlClient;
-using BladeState;
-using BladeState.Models;
-using BladeState.Providers;
+using GrumpyCoders.BladeState;
+using GrumpyCoders.BladeState.Models;
+using GrumpyCoders.BladeState.Providers;
 
 var profile = new BladeStateProfile();
 
@@ -107,7 +107,7 @@ Stores state in Redis using `StackExchange.Redis`.
 #### Registration
 
 ```csharp
-using BladeState.Providers;
+using GrumpyCoders.BladeState.Providers;
 using StackExchange.Redis;
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(
@@ -144,7 +144,7 @@ Define a `DbContext` that includes your `BladeStateEntity` set. This is where Bl
 - Optionally you may inherit from the IBladeStateEntity to extend for your organization
 
 ```csharp
-using BladeState.Models;
+using GrumpyCoders.BladeState.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace MyApp.Data;
@@ -298,9 +298,9 @@ You can configure profiles from appsettings.json and register them directly with
 2. Get the section and pass the BladeStateProfile to the 'AddBladeState();' extension method in your Program.cs
 
 ```csharp
-using BladeState;
-using BladeState.Models;
-using BladeState.Providers;
+using GrumpyCoders.BladeState;
+using GrumpyCoders.BladeState.Models;
+using GrumpyCoders.BladeState.Providers;
 
 var profile = builder.Configuration.GetSection("BladeState:Profile").Get<BladeStateProfile>();
 

@@ -11,7 +11,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - This change log file.
 - Licensing support.
 - File Provider initial support.
-- Initial support for Save Format to persist state data in formats other than JSON (currently only implemented for File Provider).
 - `FileProviderOptions` added to `BladeStateProfile` to handle provider-specific configuration.
 - `SqlProviderOptions` added to `BladeStateProfile` for provider-specific configuration.
 
@@ -19,6 +18,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Namespace updates (**breaking change**: now prefixed with `GrumpyCoders`).
 - File and naming consistency
 - Improved README clarity.
+- The parameter for SqlType has been moved to Profile.SqlProviderOptions
 
 ### Licensing
 - License changes for Large Teams and Enterprise users.
