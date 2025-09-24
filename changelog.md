@@ -10,7 +10,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 - This change log file.
 - Licensing support.
-- File Provider initial support.
+- File Provider initial support ([#35](https://github.com/grumpy-coders/BladeState/issues/35)).
+- Initial support for Save Format to persist state data in formats other than JSON (currently only implemented for File Provider).
 - `FileProviderOptions` added to `BladeStateProfile` to handle provider-specific configuration.
 - `SqlProviderOptions` added to `BladeStateProfile` for provider-specific configuration.
 

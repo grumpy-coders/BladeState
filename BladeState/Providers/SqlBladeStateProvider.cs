@@ -18,14 +18,14 @@ public class SqlBladeStateProvider<T>(
 {
     private readonly Func<DbConnection> _connectionFactory = connectionFactory;
 
-    private bool _tableExists { get; set; }
+    private bool TableExists { get; set; }
 
     public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
             return State;
 
-        await StartTimeoutTaskAsync(cancellationToken);
+        await CheckTimeoutAsync(cancellationToken);
 
         await EnsureTableExistsAsync(cancellationToken);
 
@@ -159,7 +159,7 @@ public class SqlBladeStateProvider<T>(
 
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
-        await StartTimeoutTaskAsync(cancellationToken);
+        await CheckTimeoutAsync(cancellationToken);
         OnStateChange(ProviderEventType.Save);
     }
 
@@ -193,7 +193,7 @@ public class SqlBladeStateProvider<T>(
         CipherState = string.Empty;
         State = new T();
 
-        await StartTimeoutTaskAsync(cancellationToken);
+        await CheckTimeoutAsync(cancellationToken);
         OnStateChange(ProviderEventType.Clear);
     }
 
@@ -206,7 +206,7 @@ public class SqlBladeStateProvider<T>(
 
     private async Task EnsureTableExistsAsync(CancellationToken cancellationToken)
     {
-        if (_tableExists)
+        if (TableExists)
             return;
 
         string sql = Profile.SqlProviderOptions.SqlType switch
@@ -248,7 +248,7 @@ public class SqlBladeStateProvider<T>(
         try
         {
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            _tableExists = true;
+            TableExists = true;
         }
         catch (Exception exception)
         {

@@ -25,7 +25,7 @@ public class RedisBladeStateProvider<T>(
 			return State;
 		}
 
-		await StartTimeoutTaskAsync(cancellationToken);
+		await CheckTimeoutAsync(cancellationToken);
 
 		RedisValue redisValue = await _redis.StringGetAsync(GetKey()).ConfigureAwait(false);
 
@@ -64,7 +64,7 @@ public class RedisBladeStateProvider<T>(
 
 		await _redis.StringSetAsync(GetKey(), JsonSerializer.Serialize(state)).ConfigureAwait(false);
 
-		await StartTimeoutTaskAsync(cancellationToken);
+		await CheckTimeoutAsync(cancellationToken);
 
 		OnStateChange(ProviderEventType.Save);
 	}
@@ -79,7 +79,7 @@ public class RedisBladeStateProvider<T>(
 		CipherState = string.Empty;
 		State = new T();
 
-		await StartTimeoutTaskAsync(cancellationToken);
+		await CheckTimeoutAsync(cancellationToken);
 
 		OnStateChange(ProviderEventType.Clear);
 	}
@@ -91,7 +91,10 @@ public class RedisBladeStateProvider<T>(
 	{
 		try
 		{
-			await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+			if (Profile.AutoClearOnDispose)
+			{
+				await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+			}
 		}
 		catch
 		{
