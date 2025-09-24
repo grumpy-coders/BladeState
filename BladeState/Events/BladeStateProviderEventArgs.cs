@@ -1,3 +1,4 @@
+using System;
 using GrumpyCoders.BladeState.Enums;
 
 namespace GrumpyCoders.BladeState.Events

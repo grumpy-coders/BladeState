@@ -1,18 +1,19 @@
 using System.Text.Json;
-using GrumpyCoders.BladeState;
+using System.Threading;
+using System.Threading.Tasks;
 using GrumpyCoders.BladeState.Cryptography;
 using GrumpyCoders.BladeState.Enums;
 using GrumpyCoders.BladeState.Models;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace BladeState.Providers;
+namespace GrumpyCoders.BladeState.Providers;
 
 public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeStateCryptography bladeStateCryptography, BladeStateProfile bladeStateProfile) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
 	public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
-			return State ?? new T();
+			return State;
 
 		await CheckTimeoutAsync(cancellationToken);
 
@@ -49,7 +50,7 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 		if (cancellationToken.IsCancellationRequested)
 			return;
 
-		State = state ?? new T();
+		State = state;
 
 		try
 		{

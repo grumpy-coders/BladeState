@@ -4,8 +4,11 @@ using GrumpyCoders.BladeState.Enums;
 using GrumpyCoders.BladeState.Models;
 using GrumpyCoders.BladeState;
 using GrumpyCoders.BladeState.Constants;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace BladeState.Providers;
+namespace GrumpyCoders.BladeState.Providers;
 
 public class FileSystemBladeStateProvider<TState> : BladeStateProvider<TState> where TState : class, new()
 {
@@ -18,7 +21,7 @@ public class FileSystemBladeStateProvider<TState> : BladeStateProvider<TState> w
 	{
 		if (string.IsNullOrWhiteSpace(profile.FileProviderOptions.BasePath))
 		{
-			_directory = Path.Combine(Path.GetTempPath(), Constants.BladeStateName);
+			_directory = Path.Combine(Path.GetTempPath(), Profile.InstanceName);
 		}
 		else if (!string.IsNullOrWhiteSpace(profile.FileProviderOptions.BasePath))
 		{

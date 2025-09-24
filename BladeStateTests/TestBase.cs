@@ -2,7 +2,7 @@ using System.Text.Json;
 using GrumpyCoders.BladeState.Cryptography;
 using GrumpyCoders.BladeState.Models;
 
-namespace BladeStateTests;
+namespace GrumpyCoders.BladeStateTests;
 
 public class TestBase
 {

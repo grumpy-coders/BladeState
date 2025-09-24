@@ -1,4 +1,4 @@
-namespace BladeStateTests;
+namespace GrumpyCoders.BladeStateTests;
 
 public class AppState
 {

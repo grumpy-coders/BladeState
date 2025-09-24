@@ -1,5 +1,6 @@
-﻿using BladeState.Providers;
-namespace BladeStateTests;
+﻿using GrumpyCoders.BladeState.Providers;
+
+namespace GrumpyCoders.BladeStateTests;
 
 [TestClass]
 public sealed class FileProviderTests : TestBase
