@@ -1,4 +1,3 @@
-using System;
 using BladeState.Models.ProviderOptions;
 using GrumpyCoders.BladeState.Models.ProviderOptions;
 namespace GrumpyCoders.BladeState.Models;

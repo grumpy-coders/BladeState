@@ -1,5 +1,3 @@
-using System;
-
 namespace BladeState.Models.ProviderOptions;
 
 public class FileProviderOptions
