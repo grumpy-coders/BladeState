@@ -2,17 +2,58 @@ using Microsoft.Extensions.DependencyInjection;
 using GrumpyCoders.BladeState.Cryptography;
 using GrumpyCoders.BladeState.Models;
 using GrumpyCoders.BladeState.Providers;
-using System;
 using System.Data.Common;
-using GrumpyCoders.BladeState.Enums;
 using Microsoft.EntityFrameworkCore;
 using GrumpyCoders.BladeState.Data.EntityFrameworkCore;
 using BladeState.Providers;
+using System.Text.Json;
+using System.Text;
 
 namespace GrumpyCoders.BladeState;
 
 public static class BladeStateServiceCollectionExtensions
 {
+
+/// <summary>
+    /// Validates the BladeState license key by calling GrumpyCoders API
+    /// and registers it if valid.
+    /// </summary>
+    public static IServiceCollection AddBladeStateLicense(this IServiceCollection services, string licenseKey)
+    {
+        if (string.IsNullOrWhiteSpace(licenseKey))
+        {
+            throw new InvalidOperationException("BladeState license key is missing from configuration (BladeState:LicenseKey).");
+        }
+
+        using HttpClient httpClient = new();
+
+        StringContent request = new(
+            JsonSerializer.Serialize(new { LicenseKey = licenseKey }),
+            Encoding.UTF8,
+            "application/json"
+        );
+
+        HttpResponseMessage response = httpClient
+            .PostAsync("https://grumpy-coders.com/api/license/validate", request)
+            .GetAwaiter()
+            .GetResult();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"BladeState license validation failed: {response.StatusCode}. Exception: {response.Content}");
+        }
+
+        string content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        ValidateLicenseResponse validation = JsonSerializer.Deserialize<ValidateLicenseResponse>(content);
+
+        if (!validation.IsValid)
+        {
+            throw new InvalidOperationException("BladeState license is invalid or expired.");
+        }
+
+        return services;
+    }
+
 	public static IServiceCollection AddBladeState<TState, TProvider>(
 		this IServiceCollection services,
 		BladeStateProfile profile)
