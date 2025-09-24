@@ -27,9 +27,8 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 				if (Profile.AutoEncrypt)
 				{
 					data = Decrypt(data);
-
 				}
-				State = JsonSerializer.Deserialize<T>(data) ?? new T();
+				State = JsonSerializer.Deserialize<T>(data);
 			}
 			else
 			{
@@ -53,7 +52,7 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 		}
 
 		await CheckTimeoutAsync(cancellationToken);
-		LastAccessTime = DateTime.Now;
+		LastAccessTime = DateTime.UtcNow;
 		State = state;
 
 		try

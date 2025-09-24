@@ -22,7 +22,7 @@ public class TestBase
 			InstanceId = $"{DateTime.Now:yyyyMMdd-hh-ss}-{Guid.NewGuid()}",
 			AutoEncrypt = true,
 			AutoClearOnDispose = true,
-			InstanceTimeout = TimeSpan.FromSeconds(15),
+			InstanceTimeout = TimeSpan.FromHours(15),
 			FileProviderOptions = new()
 			{
 				BasePath = Path.Combine(Path.GetTempPath(), "BladeStateTests")

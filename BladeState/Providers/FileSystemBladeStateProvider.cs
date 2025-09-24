@@ -45,7 +45,7 @@ public class FileSystemBladeStateProvider<TState> : BladeStateProvider<TState> w
 			return;
 		}
 		await CheckTimeoutAsync(cancellationToken);
-		LastAccessTime = DateTime.Now;
+		LastAccessTime = DateTime.UtcNow;
 
 		try
 		{
