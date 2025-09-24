@@ -34,22 +34,23 @@ public static class BladeStateServiceCollectionExtensions
 			 "application/json"
 		);
 
-		HttpResponseMessage response = httpClient
+		using (HttpResponseMessage response = httpClient
 			 .PostAsync("https://grumpy-coders.com/api/license/validate", request)
 			 .GetAwaiter()
-			 .GetResult();
-
-		if (!response.IsSuccessStatusCode)
+			 .GetResult())
 		{
-			throw new InvalidOperationException($"BladeState license validation failed: {response.StatusCode}. Exception: {response.Content}");
-		}
+			if (!response.IsSuccessStatusCode)
+			{
+				throw new InvalidOperationException($"BladeState license validation failed: {response.StatusCode}. Exception: {response.Content}");
+			}
 
-		string content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-		ValidateLicenseResponse validation = JsonSerializer.Deserialize<ValidateLicenseResponse>(content);
+			string content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+			ValidateLicenseResponse validation = JsonSerializer.Deserialize<ValidateLicenseResponse>(content);
 
-		if (!validation.IsValid)
-		{
-			throw new InvalidOperationException("BladeState license is invalid or expired.");
+			if (!validation.IsValid)
+			{
+				throw new InvalidOperationException("BladeState license is invalid or expired.");
+			}
 		}
 
 		return services;
@@ -97,16 +98,11 @@ public static class BladeStateServiceCollectionExtensions
 	/// Registers a BladeState provider using SQL (direct ADO.NET or custom provider).
 	/// Generic variant for strongly-typed state. Need to pass a connection delegate
 	/// </summary>
-	public static IServiceCollection AddSqlBladeState<TState>(
-		this IServiceCollection services,
-		Func<DbConnection> connectionDelegate,
-		BladeStateProfile profile)
-		where TState : class, new()
+	public static IServiceCollection AddSqlBladeState<TState>(this IServiceCollection services, Func<DbConnection> connectionDelegate, BladeStateProfile profile) where TState : class, new()
 	{
 		services.AddSingleton(profile);
 		services.AddSingleton(new BladeStateCryptography(profile.EncryptionKey));
 		services.AddSingleton(sp => new SqlBladeStateProvider<TState>(connectionDelegate, sp.GetRequiredService<BladeStateCryptography>(), sp.GetRequiredService<BladeStateProfile>()));
-
 		return services;
 	}
 

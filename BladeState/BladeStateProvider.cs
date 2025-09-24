@@ -135,7 +135,6 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 			return false;
 		}
 
-
 		TimeSpan delay = Profile.InstanceTimeout;
 		TimeSpan elapsed = DateTime.UtcNow - LastAccessTime;
 		TimeSpan remaining = delay - elapsed;
@@ -145,21 +144,6 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 			return true;
 		}
 		return false;
-	}
-
-	public virtual async Task TimeoutAsync()
-	{
-		try
-		{
-			if (Profile.SaveOnInstanceTimeout)
-				await SaveStateAsync(State);
-
-			await DisposeAsync();
-		}
-		catch
-		{
-			await DisposeAsync(); // force disposal no matter what
-		}
 	}
 
 	public async ValueTask DisposeAsync()
