@@ -10,7 +10,7 @@ using GrumpyCoders.BladeState.Models;
 
 namespace GrumpyCoders.BladeState.Providers;
 
-public partial class SqlBladeStateProvider<T>(Func<DbConnection> connectionFactory, BladeStateCryptography bladeStateCryptography, BladeStateProfile bladeStateProfile)
+public class SqlBladeStateProvider<T>(Func<DbConnection> connectionFactory, BladeStateCryptography bladeStateCryptography, BladeStateProfile bladeStateProfile)
 	: BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
 	private readonly Func<DbConnection> _connectionFactory = connectionFactory;
@@ -30,7 +30,7 @@ public partial class SqlBladeStateProvider<T>(Func<DbConnection> connectionFacto
 		await using DbConnection connection = _connectionFactory();
 		await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-		if (!LettersAndNumbersRegex().IsMatch(Profile.InstanceName))
+		if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
 		{
 			throw new InvalidOperationException("The instance name is invalid");
 		}
@@ -98,7 +98,7 @@ public partial class SqlBladeStateProvider<T>(Func<DbConnection> connectionFacto
 		await using DbConnection connection = _connectionFactory();
 		await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-		if (!LettersAndNumbersRegex().IsMatch(Profile.InstanceName))
+		if (!Regex.IsMatch(Profile.InstanceName, @"^[A-Za-z0-9_]+$"))
 		{
 			throw new InvalidOperationException("The instance name is invalid");
 		}
@@ -247,7 +247,4 @@ public partial class SqlBladeStateProvider<T>(Func<DbConnection> connectionFacto
 			throw new InvalidOperationException($"An error occurred ensuring existence of sql state table. Ex: {exception.Message}");
 		}
 	}
-
-	[GeneratedRegex(@"^[A-Za-z0-9_]+$")]
-	private static partial Regex LettersAndNumbersRegex();
 }

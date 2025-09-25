@@ -26,10 +26,11 @@
     <!-- Repo & License -->
   <RepositoryUrl>https://github.com/grumpy-coders/BladeState</RepositoryUrl>
     <PackageProjectUrl>https://github.com/grumpy-coders/BladeState</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../LICENSE.txt" Pack="true" PackagePath="" />
     <None Include="../README.md" Pack="true" PackagePath="" />
     <None Include="../CHANGELOG.md" Pack="true" PackagePath="" />
     <None Include="Assets/Graphics/logo.png" Pack="true" PackagePath="Assets/Graphics/" />
