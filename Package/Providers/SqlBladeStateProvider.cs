@@ -30,7 +30,7 @@ public class SqlBladeStateProvider<T>(Func<DbConnection> connectionFactory, Blad
 		await using DbConnection connection = _connectionFactory();
 		await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-		if (!BladeRegex.LettersAndNumbers().IsMatch(Profile.InstanceName))
+		if (!BladeStateRegex.AlphaNumericAndUnderscore().IsMatch(Profile.InstanceName))
 		{
 			throw new InvalidOperationException("The instance name is invalid");
 		}
@@ -98,7 +98,7 @@ public class SqlBladeStateProvider<T>(Func<DbConnection> connectionFactory, Blad
 		await using DbConnection connection = _connectionFactory();
 		await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-		if (!BladeRegex.LettersAndNumbers().IsMatch(Profile.InstanceName))
+		if (!BladeStateRegex.AlphaNumericAndUnderscore().IsMatch(Profile.InstanceName))
 		{
 			throw new InvalidOperationException("The instance name is invalid");
 		}
