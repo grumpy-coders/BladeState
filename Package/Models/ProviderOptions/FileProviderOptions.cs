@@ -1,4 +1,6 @@
-namespace BladeState.Models.ProviderOptions;
+using System;
+
+namespace GrumpyCoders.BladeState.Models.ProviderOptions;
 
 public class FileProviderOptions
 {

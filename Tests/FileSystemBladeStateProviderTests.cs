@@ -1,5 +1,6 @@
-﻿using BladeState.Providers;
-namespace BladeStateTests;
+﻿using GrumpyCoders.BladeState.Providers;
+
+namespace GrumpyCoders.BladeStateTests;
 
 [TestClass]
 public sealed class FileProviderTests : TestBase
@@ -13,10 +14,25 @@ public sealed class FileProviderTests : TestBase
     }
 
     [TestMethod]
+    [Ignore("Long-running timeout test, run manually only")]
+    public async Task TimeoutTest()
+    {
+        await Provider.SaveStateAsync(AppState, CancellationToken);
+        AppState state = await Provider.LoadStateAsync(CancellationToken);
+        state.LastName = "Modified";
+        await Task.Delay(Profile.InstanceTimeout + TimeSpan.FromSeconds(5), CancellationToken);
+        state = await Provider.LoadStateAsync(CancellationToken);
+
+        // State should be reset to default after timeout
+        Assert.AreNotEqual("Modified", state.LastName);
+    }
+
+    [TestMethod]
     public async Task TestSaveAndRestore()
     {
         try
         {
+            await Provider.SaveStateAsync(AppState, CancellationToken);
             await Provider.SaveStateAsync(AppState, CancellationToken);
             if (!File.Exists(Provider.GetFilePath()))
             {

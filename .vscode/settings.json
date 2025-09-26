@@ -1,6 +1,13 @@
 {
 	"cSpell.words": [
-		"finalizer"
+		"aspnetcore",
+		"Decryptor",
+		"Encryptor",
+		"finalizer",
+		"NVARCHAR",
+		"retValue",
+		"sysobjects",
+		"xtype"
 	],
 	"window.title": "BladeState"
 }

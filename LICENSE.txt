@@ -34,4 +34,4 @@ Team License
 Enterprise License
 - Custom pricing (starting at $999/year)
 - Flexible terms, including per-application licensing if required
-- Unlimited developers & applications (unless other
+- Unlimited developers & applications

@@ -1,10 +1,13 @@
+using System;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using GrumpyCoders.BladeState.Cryptography;
 using GrumpyCoders.BladeState.Enums;
 using GrumpyCoders.BladeState.Events;
 using GrumpyCoders.BladeState.Models;
 
-namespace GrumpyCoders.BladeState;
+namespace GrumpyCoders.BladeState.Providers;
 
 /// <summary>
 /// Defines persistence for a given state type with async timeout handling.
@@ -15,7 +18,6 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	protected readonly BladeStateCryptography Cryptography = bladeStateCryptography;
 	protected readonly BladeStateProfile Profile = bladeStateProfile;
 	protected T State { get; set; } = new T();
-	protected string CipherState { get; set; } = string.Empty;
 
 	protected DateTime LastAccessTime;
 	private bool _disposed;
@@ -30,37 +32,22 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	protected virtual void OnStateChange(ProviderEventType eventType = ProviderEventType.None) => StateChanged(this, new BladeStateProviderEventArgs<T>(Profile.InstanceId, State, eventType));
 
 
-	public virtual async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
+	public virtual Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
 		{
-			return State;
+			return Task.FromResult(State);
 		}
-
-		await CheckTimeoutAsync(cancellationToken);
-
-		try
-		{
-			if (Profile.AutoEncrypt)
-			{
-				await DecryptStateAsync(cancellationToken);
-			}
-		}
-		catch
-		{
-			State = new T();
-		}
-
+		State = new T();
 		OnStateChange(ProviderEventType.Load);
-
-		return State;
+		return Task.FromResult(State);
 	}
 
-	public virtual async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+	public virtual Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
 		{
-			return;
+			return Task.CompletedTask;
 		}
 
 		State = state;
@@ -72,7 +59,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		{
 			if (Profile.AutoEncrypt)
 			{
-				await EncryptStateAsync(cancellationToken);
+				EncryptState();
 			}
 		}
 		catch (Exception exception)
@@ -81,6 +68,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		}
 
 		OnStateChange(ProviderEventType.Save);
+		return Task.CompletedTask;
 	}
 
 	/// <summary>
@@ -93,10 +81,7 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 		{
 			return Task.CompletedTask;
 		}
-
 		State = new T();
-		CipherState = string.Empty;
-
 		OnStateChange(ProviderEventType.Clear);
 		return Task.CompletedTask;
 	}
@@ -106,22 +91,16 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	/// </summary>
 	/// <param name="cancellationToken"></param>
 	/// <exception cref="InvalidOperationException"></exception>
-	public virtual async Task EncryptStateAsync(CancellationToken cancellationToken = default)
+	public string EncryptState()
 	{
-		if (cancellationToken.IsCancellationRequested)
-			return;
-
 		try
 		{
-			CipherState = Cryptography.Encrypt(JsonSerializer.Serialize(State));
+			return Cryptography.Encrypt(JsonSerializer.Serialize(State));
 		}
 		catch (Exception exception)
 		{
-			CipherState = string.Empty;
 			throw new InvalidOperationException($"Could not encrypt state. Ex: {exception.Message}");
 		}
-
-		await CheckTimeoutAsync(cancellationToken);
 	}
 
 	/// <summary>
@@ -130,32 +109,14 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 	/// <param name="cancellationToken"></param>
 	/// <returns></returns>
 	/// <exception cref="InvalidOperationException"></exception>
-	public virtual async Task DecryptStateAsync(CancellationToken cancellationToken = default)
+	public virtual string Decrypt(string cipherText)
 	{
-		if (cancellationToken.IsCancellationRequested)
-			return;
-
 		try
 		{
-			if (await CheckTimeoutAsync(cancellationToken))
-			{
-				State = new T();
-				return;
-			}
-
-			try
-			{
-				string decryptedValue = Cryptography.Decrypt(CipherState);
-				State = JsonSerializer.Deserialize<T>(decryptedValue);
-			}
-			catch
-			{
-				State = new T();
-			}
+			return Cryptography.Decrypt(cipherText);
 		}
 		catch (Exception exception)
 		{
-			State = new T();
 			throw new InvalidOperationException($"Could not decrypt state. Ex: {exception.Message}");
 		}
 	}
@@ -174,7 +135,6 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 			return false;
 		}
 
-
 		TimeSpan delay = Profile.InstanceTimeout;
 		TimeSpan elapsed = DateTime.UtcNow - LastAccessTime;
 		TimeSpan remaining = delay - elapsed;
@@ -184,21 +144,6 @@ public abstract class BladeStateProvider<T>(BladeStateCryptography bladeStateCry
 			return true;
 		}
 		return false;
-	}
-
-	public virtual async Task TimeoutAsync()
-	{
-		try
-		{
-			if (Profile.SaveOnInstanceTimeout)
-				await SaveStateAsync(State);
-
-			await DisposeAsync();
-		}
-		catch
-		{
-			await DisposeAsync(); // force disposal no matter what
-		}
 	}
 
 	public async ValueTask DisposeAsync()

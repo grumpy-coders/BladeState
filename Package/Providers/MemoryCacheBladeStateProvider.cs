@@ -1,18 +1,22 @@
+using System;
 using System.Text.Json;
-using GrumpyCoders.BladeState;
+using System.Threading;
+using System.Threading.Tasks;
 using GrumpyCoders.BladeState.Cryptography;
 using GrumpyCoders.BladeState.Enums;
 using GrumpyCoders.BladeState.Models;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace BladeState.Providers;
+namespace GrumpyCoders.BladeState.Providers;
 
 public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeStateCryptography bladeStateCryptography, BladeStateProfile bladeStateProfile) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
 {
 	public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
-			return State ?? new T();
+		{
+			return State;
+		}
 
 		await CheckTimeoutAsync(cancellationToken);
 
@@ -22,13 +26,9 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 			{
 				if (Profile.AutoEncrypt)
 				{
-					CipherState = data;
-					await DecryptStateAsync(cancellationToken);
+					data = Decrypt(data);
 				}
-				else
-				{
-					State = JsonSerializer.Deserialize<T>(data) ?? new T();
-				}
+				State = JsonSerializer.Deserialize<T>(data);
 			}
 			else
 			{
@@ -47,41 +47,31 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 	public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
+		{
 			return;
+		}
 
-		State = state ?? new T();
+		await CheckTimeoutAsync(cancellationToken);
+		LastAccessTime = DateTime.UtcNow;
+		State = state;
 
 		try
 		{
-			string data;
-			if (Profile.AutoEncrypt)
-			{
-				await EncryptStateAsync(cancellationToken);
-				data = CipherState;
-			}
-			else
-			{
-				data = JsonSerializer.Serialize(State);
-			}
-
-			memoryCache.Set(Profile.InstanceId, data, new MemoryCacheEntryOptions
-			{
-				SlidingExpiration = Profile.InstanceTimeout
-			});
+			string data = Profile.AutoEncrypt ? EncryptState() : JsonSerializer.Serialize(State);
+			memoryCache.Set(Profile.InstanceId, data, new MemoryCacheEntryOptions { SlidingExpiration = Profile.InstanceTimeout });
 		}
 		catch
 		{
 			// swallow or log serialization/encryption failures
 		}
 
-		await CheckTimeoutAsync(cancellationToken);
 		OnStateChange(ProviderEventType.Save);
 	}
 
-	public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
+	public override Task ClearStateAsync(CancellationToken cancellationToken = default)
 	{
 		if (cancellationToken.IsCancellationRequested)
-			return;
+			return Task.CompletedTask;
 
 		try
 		{
@@ -92,11 +82,10 @@ public class MemoryCacheBladeStateProvider<T>(IMemoryCache memoryCache, BladeSta
 			// swallow/log
 		}
 
-		CipherState = string.Empty;
 		State = new T();
-
-		await CheckTimeoutAsync(cancellationToken);
 		OnStateChange(ProviderEventType.Clear);
+		return Task.CompletedTask;
+
 	}
 
 	/// <summary>

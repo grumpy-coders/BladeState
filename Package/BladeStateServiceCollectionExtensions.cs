@@ -5,54 +5,56 @@ using GrumpyCoders.BladeState.Providers;
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using GrumpyCoders.BladeState.Data.EntityFrameworkCore;
-using BladeState.Providers;
 using System.Text.Json;
 using System.Text;
+using System;
+using System.Net.Http;
 
 namespace GrumpyCoders.BladeState;
 
 public static class BladeStateServiceCollectionExtensions
 {
 
-/// <summary>
-    /// Validates the BladeState license key by calling GrumpyCoders API
-    /// and registers it if valid.
-    /// </summary>
-    public static IServiceCollection AddBladeStateLicense(this IServiceCollection services, string licenseKey)
-    {
-        if (string.IsNullOrWhiteSpace(licenseKey))
-        {
-            throw new InvalidOperationException("BladeState license key is missing from configuration (BladeState:LicenseKey).");
-        }
+	/// <summary>
+	/// Validates the BladeState license key by calling GrumpyCoders API
+	/// and registers it if valid.
+	/// </summary>
+	public static IServiceCollection AddBladeStateLicense(this IServiceCollection services, string licenseKey)
+	{
+		if (string.IsNullOrWhiteSpace(licenseKey))
+		{
+			throw new InvalidOperationException("BladeState license key is missing from configuration (BladeState:LicenseKey).");
+		}
 
-        using HttpClient httpClient = new();
+		using HttpClient httpClient = new();
 
-        StringContent request = new(
-            JsonSerializer.Serialize(new { LicenseKey = licenseKey }),
-            Encoding.UTF8,
-            "application/json"
-        );
+		StringContent request = new(
+			 JsonSerializer.Serialize(new { LicenseKey = licenseKey }),
+			 Encoding.UTF8,
+			 "application/json"
+		);
 
-        HttpResponseMessage response = httpClient
-            .PostAsync("https://grumpy-coders.com/api/license/validate", request)
-            .GetAwaiter()
-            .GetResult();
+		using (HttpResponseMessage response = httpClient
+			 .PostAsync("https://grumpy-coders.com/api/license/validate", request)
+			 .GetAwaiter()
+			 .GetResult())
+		{
+			if (!response.IsSuccessStatusCode)
+			{
+				throw new InvalidOperationException($"BladeState license validation failed: {response.StatusCode}. Exception: {response.Content}");
+			}
 
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new InvalidOperationException($"BladeState license validation failed: {response.StatusCode}. Exception: {response.Content}");
-        }
+			string content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+			ValidateLicenseResponse validation = JsonSerializer.Deserialize<ValidateLicenseResponse>(content);
 
-        string content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-        ValidateLicenseResponse validation = JsonSerializer.Deserialize<ValidateLicenseResponse>(content);
+			if (!validation.IsValid)
+			{
+				throw new InvalidOperationException("BladeState license is invalid or expired.");
+			}
+		}
 
-        if (!validation.IsValid)
-        {
-            throw new InvalidOperationException("BladeState license is invalid or expired.");
-        }
-
-        return services;
-    }
+		return services;
+	}
 
 	public static IServiceCollection AddBladeState<TState, TProvider>(
 		this IServiceCollection services,
@@ -96,16 +98,11 @@ public static class BladeStateServiceCollectionExtensions
 	/// Registers a BladeState provider using SQL (direct ADO.NET or custom provider).
 	/// Generic variant for strongly-typed state. Need to pass a connection delegate
 	/// </summary>
-	public static IServiceCollection AddSqlBladeState<TState>(
-		this IServiceCollection services,
-		Func<DbConnection> connectionDelegate,
-		BladeStateProfile profile)
-		where TState : class, new()
+	public static IServiceCollection AddSqlBladeState<TState>(this IServiceCollection services, Func<DbConnection> connectionDelegate, BladeStateProfile profile) where TState : class, new()
 	{
 		services.AddSingleton(profile);
 		services.AddSingleton(new BladeStateCryptography(profile.EncryptionKey));
 		services.AddSingleton(sp => new SqlBladeStateProvider<TState>(connectionDelegate, sp.GetRequiredService<BladeStateCryptography>(), sp.GetRequiredService<BladeStateProfile>()));
-
 		return services;
 	}
 

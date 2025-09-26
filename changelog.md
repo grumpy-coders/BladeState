@@ -6,7 +6,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
-## [1.0.7] - 2025-09-21
+## [2.0.0] - 2025-09-21
 ### Added
 - This change log file.
 - Licensing support.

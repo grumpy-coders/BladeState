@@ -3,6 +3,8 @@ using GrumpyCoders.BladeState.Enums;
 using GrumpyCoders.BladeState.Models;
 using StackExchange.Redis;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace GrumpyCoders.BladeState.Providers;
 
@@ -36,15 +38,11 @@ public class RedisBladeStateProvider<T>(
 
 		if (Profile.AutoEncrypt)
 		{
-			CipherState = redisValue;
-			await DecryptStateAsync(cancellationToken);
-			OnStateChange(ProviderEventType.Load);
-			return State;
+			redisValue = Decrypt(redisValue);
 		}
 
 		State = JsonSerializer.Deserialize<T>(redisValue);
 		OnStateChange(ProviderEventType.Load);
-
 		return State;
 	}
 
@@ -55,8 +53,8 @@ public class RedisBladeStateProvider<T>(
 
 		if (Profile.AutoEncrypt)
 		{
-			await EncryptStateAsync(cancellationToken);
-			await _redis.StringSetAsync(GetKey(), CipherState).ConfigureAwait(false);
+			string cipherText = EncryptState();
+			await _redis.StringSetAsync(GetKey(), cipherText).ConfigureAwait(false);
 			return;
 		}
 
@@ -74,7 +72,6 @@ public class RedisBladeStateProvider<T>(
 
 		await _redis.KeyDeleteAsync(GetKey()).ConfigureAwait(false);
 
-		CipherState = string.Empty;
 		State = new T();
 
 		await CheckTimeoutAsync(cancellationToken);

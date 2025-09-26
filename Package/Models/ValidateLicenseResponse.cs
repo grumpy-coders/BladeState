@@ -1,3 +1,5 @@
+using System;
+
 namespace GrumpyCoders.BladeState.Models;
 
 public class ValidateLicenseResponse
