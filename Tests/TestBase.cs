@@ -23,7 +23,7 @@ public class TestBase
 			AutoEncrypt = true,
 			AutoClearOnDispose = true,
 			InstanceTimeout = TimeSpan.FromHours(15),
-			FileProviderOptions = new()
+			FileSystemProviderOptions = new()
 			{
 				BasePath = Path.Combine(Path.GetTempPath(), "BladeStateTests")
 			}

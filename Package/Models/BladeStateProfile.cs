@@ -44,7 +44,7 @@ public class BladeStateProfile
     /// <summary>
     /// Profile options specific to FileBladeStateProvider
     /// </summary>
-    public FileProviderOptions FileProviderOptions { get; set; } = new();
+    public FileSystemProviderOptions FileSystemProviderOptions { get; set; } = new();
 
     /// <summary>
     /// Profile options specific to SqlBladeStateProvider
