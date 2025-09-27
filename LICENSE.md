@@ -14,7 +14,7 @@ It is **free for individuals** and requires a **commercial license** for teams, 
 ---
 
 ## Standard License (Per-Developer)
-- **$99/year per developer**
+- **$9.99/month per developer**
 - Unlimited applications for that developer
 - Commercial use allowed
 - Updates + email support
@@ -22,7 +22,7 @@ It is **free for individuals** and requires a **commercial license** for teams, 
 ---
 
 ## Team License
-- **$449/year (up to 5 developers)**
+- **$44.99/month (up to 5 developers)**
 - Unlimited applications for the team
 - Commercial use allowed
 - Updates + priority support
@@ -30,10 +30,10 @@ It is **free for individuals** and requires a **commercial license** for teams, 
 ---
 
 ## Enterprise License
-- **Custom pricing (starting at $999/year)**
+- **Custom pricing (starting at $99.99/month)**
 - Flexible terms, including **per-application licensing** if required
 - Unlimited developers & applications (unless otherwise negotiated)
-- Priority support, SLAs, and custom feature discussions
+- Priority, white-glove support, SLAs, and custom feature discussions
 
 ---
 
