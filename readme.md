@@ -1,21 +1,12 @@
-# 🗡️ BladeState
-
-## This project is being developed and provided 'AS IS'
-
-DOING OUR BEST TO GET FEATURES AND FIXES (IF NEEDED) OUT ASAP
+## BladeState ⚔️
 
 ## I AM ACTIVELY UPDATING ON NUGET AND README, HMU FOR FEATURE REQUESTS -> [doomfaller@gmail.com](mailto:doomfaller@gmail.com)
 
 THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO
 
-## What's on the road map?
+## What's new in version 2.0.0?
 
-* FileBladeStateProvider
-* File State viewer app
-* Performance and Enhancements with Change Event
-* Enterprise and Large Team Licensing
-
-## What's new in version 1.0.6?
+Well, check out the new changelog!
 
 * Performance and stability enhancements
 
