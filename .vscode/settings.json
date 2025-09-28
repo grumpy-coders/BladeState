@@ -9,5 +9,12 @@
 		"sysobjects",
 		"xtype"
 	],
-	"window.title": "BladeState"
+	"window.title": "BladeState",
+	"editor.tabSize": 3,
+	"editor.insertSpaces": false,
+	"gradle.autoDetect": "off",
+	"java.import.gradle.enabled": false,
+	"java.import.maven.enabled": false,
+	"java.project.importOnFirstTime": "disabled",
+	"java.test.enabled": false
 }

@@ -13,13 +13,13 @@ public sealed class MemoryCacheBladeStateProviderTests : TestBase
     }
 
     [TestMethod]
-    [Ignore("Long-running timeout test, run manually only")]
     public async Task TimeoutTest()
     {
         await Provider.SaveStateAsync(AppState, CancellationToken);
         AppState state = await Provider.LoadStateAsync(CancellationToken);
         state.LastName = "Modified";
-        await Task.Delay(Profile.InstanceTimeout + TimeSpan.FromSeconds(5), CancellationToken);
+        Profile.InstanceTimeout = TimeSpan.FromMilliseconds(1); // Force timeout on next load
+        await Task.Delay(1, CancellationToken);
         state = await Provider.LoadStateAsync(CancellationToken);
 
         // State should be reset to default after timeout
