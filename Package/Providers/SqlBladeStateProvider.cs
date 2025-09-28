@@ -92,11 +92,12 @@ public class SqlBladeStateProvider<T>(Func<DbConnection> connectionFactory, Blad
 		{
 			return;
 		}
-
+		LastAccessTime = DateTime.UtcNow;
 		string data = Profile.AutoEncrypt ? EncryptState() : JsonSerializer.Serialize(state);
 
 		await using DbConnection connection = _connectionFactory();
 		await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+		await EnsureTableExistsAsync(cancellationToken);
 
 		if (!BladeStateRegex.AlphaNumericAndUnderscore().IsMatch(Profile.InstanceName))
 		{
@@ -168,10 +169,10 @@ public class SqlBladeStateProvider<T>(Func<DbConnection> connectionFactory, Blad
 		await using DbCommand command = connection.CreateCommand();
 		command.CommandText = sql;
 
-		DbParameter p = command.CreateParameter();
-		p.ParameterName = "@InstanceId";
-		p.Value = Profile.InstanceId;
-		command.Parameters.Add(p);
+		DbParameter dbParameter = command.CreateParameter();
+		dbParameter.ParameterName = "@InstanceId";
+		dbParameter.Value = Profile.InstanceId;
+		command.Parameters.Add(dbParameter);
 
 		try
 		{
@@ -183,7 +184,6 @@ public class SqlBladeStateProvider<T>(Func<DbConnection> connectionFactory, Blad
 		}
 
 		State = new T();
-		await CheckTimeoutAsync(cancellationToken);
 		OnStateChange(ProviderEventType.Clear);
 	}
 
@@ -248,4 +248,27 @@ public class SqlBladeStateProvider<T>(Func<DbConnection> connectionFactory, Blad
 		}
 	}
 
+
+	/// <summary>
+	/// Async disposal hook: cleanup persisted state before disposal.
+	/// </summary>
+	protected override async ValueTask DisposeAsyncCore()
+	{
+		try
+		{
+			// Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+			if (Profile.AutoClearOnDispose)
+			{
+				await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+			}
+		}
+		catch
+		{
+			// swallow or log exceptions, since Dispose must not throw
+		}
+		await base.DisposeAsyncCore().ConfigureAwait(false);
+	}
 }
+
+
