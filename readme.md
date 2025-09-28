@@ -8,8 +8,6 @@ THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO
 
 Well, check out the new changelog!
 
-* Performance and stability enhancements
-
 [![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![License](https://img.shields.io/github/license/doomfaller/BladeState.svg?style=flat)](LICENSE)
