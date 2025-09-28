@@ -2,8 +2,6 @@ using System.Text.Json;
 using GrumpyCoders.BladeState.Cryptography;
 using GrumpyCoders.BladeState.Enums;
 using GrumpyCoders.BladeState.Models;
-using GrumpyCoders.BladeState;
-using GrumpyCoders.BladeState.Constants;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,13 +18,13 @@ public class FileSystemBladeStateProvider<TState> : BladeStateProvider<TState> w
 
 	public FileSystemBladeStateProvider(BladeStateCryptography cryptography, BladeStateProfile profile) : base(cryptography, profile)
 	{
-		if (string.IsNullOrWhiteSpace(profile.FileProviderOptions.BasePath))
+		if (string.IsNullOrWhiteSpace(profile.FileSystemProviderOptions.BasePath))
 		{
 			_directory = Path.Combine(Path.GetTempPath(), Profile.InstanceName);
 		}
-		else if (!string.IsNullOrWhiteSpace(profile.FileProviderOptions.BasePath))
+		else if (!string.IsNullOrWhiteSpace(profile.FileSystemProviderOptions.BasePath))
 		{
-			_directory = profile.FileProviderOptions.BasePath;
+			_directory = profile.FileSystemProviderOptions.BasePath;
 		}
 
 		if (!Directory.Exists(_directory))

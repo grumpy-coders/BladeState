@@ -106,7 +106,7 @@ public static class BladeStateServiceCollectionExtensions
 		return services;
 	}
 
-	public static IServiceCollection AddEfCoreBladeState<TState>(this IServiceCollection services, BladeStateProfile profile, Action<DbContextOptionsBuilder> optionsAction) where TState : class, new()
+	public static IServiceCollection AddEfCoreBladeState<TState>(this IServiceCollection services, Action<DbContextOptionsBuilder> optionsAction, BladeStateProfile profile) where TState : class, new()
 	{
 		// Profile + crypto = safe as singleton
 		services.AddSingleton(profile);

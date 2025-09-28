@@ -20,6 +20,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - File and naming consistency
 - Improved README clarity.
 - The parameter for SqlType has been moved to Profile.SqlProviderOptions
+- Use of .AddEfCoreBladeState() and .AddSqlBladeState() service collection extensions have been drastically simplified (see readme)
 
 ### Licensing
 - License changes for Large Teams and Enterprise users.
