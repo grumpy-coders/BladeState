@@ -19,6 +19,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - File and naming consistency
 - Improved README clarity.
 - The parameter for SqlType has been moved to Profile.SqlProviderOptions
+- SqlType is no longer a required parameter and is defaulted to use ANSI syntax for agnostic support of data backends, this simplifies swaps with no code changes but may not be as performant (dependent on data engine)
 - Use of .AddEfCoreBladeState() and .AddSqlBladeState() service collection extensions have been drastically simplified (see readme)
 
 ### Licensing
