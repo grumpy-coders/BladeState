@@ -10,7 +10,7 @@ Well, check out the new changelog!
 
 [![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
-[![License](https://img.shields.io/github/license/doomfaller/BladeState.svg?style=flat)](LICENSE)
+[![License](https://img.shields.io/github/license/doomfaller/BladeState.svg?style=flat)](LICENSE.md)
 
 **BladeState** is a lightweight server-side dependency injection state persistence library for .NET applications.
 It provides **dependency-injected storage** for persisting state across requests without relying on `HttpContext.Session`.
