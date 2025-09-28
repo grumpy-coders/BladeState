@@ -4,5 +4,5 @@ public partial class Constants
 {
 	protected Constants() { }
 
-	public const string BladeStateName = "BlaseState";
+	public const string BladeStateName = "BladeState";
 }
