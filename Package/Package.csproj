@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>2.0.0</Version>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  
+    <!-- NuGet Package Identity -->
+    <PackageId>BladeState</PackageId>
+    <Authors>Grumpy-Coders</Authors>
+    <Company>Grumpy-Coders</Company>
+    <PackageIcon>Assets/Graphics/logo.png</PackageIcon>
+
+  <!-- Discoverability -->
+  <Description>
+    BladeState is a lightweight server-side state/session persistence library 
+    for applications that make use of dependency injection, such as Razor and Blazor apps. It provides dependency-injected storage 
+    for persisting data across requests without relying on HttpContext.Session.
+  </Description>
+
+  <PackageTags>
+    razor;blazor;session;state;storage;persistence;dependency-injection;server-side;aspnetcore
+  </PackageTags>
+
+    <!-- Repo & License -->
+  <RepositoryUrl>https://github.com/grumpy-coders/BladeState</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/grumpy-coders/BladeState</PackageProjectUrl>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../LICENSE.txt" Pack="true" PackagePath="" />
+    <None Include="../README.md" Pack="true" PackagePath="" />
+    <None Include="../CHANGELOG.md" Pack="true" PackagePath="" />
+    <None Include="Assets/Graphics/logo.png" Pack="true" PackagePath="Assets/Graphics/" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
+    <PackageReference Include="StackExchange.Redis" Version="2.9.11" />    
+  </ItemGroup>
+
+</Project>

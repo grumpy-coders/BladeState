@@ -1,25 +1,17 @@
-# 🗡️ BladeState
+## BladeState ⚔️
 
-## This project is being developed and provided 'AS IS'
-
-DOING OUR BEST TO GET FEATURES AND FIXES (IF NEEDED) OUT ASAP
-
-## I AM ACTIVELY UPDATING ON NUGET AND README, HMU FOR FEATURE REQUESTS -> doomfaller@gmail.com
+## I AM ACTIVELY UPDATING ON NUGET AND README, HMU FOR FEATURE REQUESTS -> [doomfaller@gmail.com](mailto:doomfaller@gmail.com)
 
 THANKS FOR YOUR PATIENCE - YOUR FAVORITE SCHIZO
 
-## What's on the road map? 
-- FileBladeStateProvider
-- File State viewer app
-- Performance and Enhancements with Change Event
-- Enterprise and Large Team Licensing
+## What's new in version 2.0.0?
 
-## What's new in version 1.0.6?
+Well, check out the new changelog!
 
-- Performance and stability enhancements
+* Performance and stability enhancements
 
-[![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat&logo=nuget)](https://www.nuget.org/packages/BladeState/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat&logo=nuget)](https://www.nuget.org/packages/BladeState/)
+[![NuGet Version](https://img.shields.io/nuget/v/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/BladeState.svg?style=flat\&logo=nuget)](https://www.nuget.org/packages/BladeState/)
 [![License](https://img.shields.io/github/license/doomfaller/BladeState.svg?style=flat)](LICENSE)
 
 **BladeState** is a lightweight server-side dependency injection state persistence library for .NET applications.
@@ -29,10 +21,10 @@ It provides **dependency-injected storage** for persisting state across requests
 
 ## ✨ Features
 
-- 🗂 Server-side storage abstraction
-- ⚡ Easy integration with **Dependency Injection**
-- 🔄 Works across Razor & Blazor server applications
-- 🔧 Extensible design for custom providers (e.g. Redis, SQL, Memory Cache)
+* 🗂 Server-side storage abstraction
+* ⚡ Easy integration with **Dependency Injection**
+* 🔄 Works across Razor & Blazor server applications
+* 🔧 Extensible design for custom providers (e.g. Redis, SQL, Memory Cache)
 
 ---
 
@@ -50,17 +42,28 @@ dotnet add package BladeState
 
 BladeState includes multiple built-in providers for persisting state:
 
+---
+
 ### 1. Memory Cache Provider (`MemoryCacheBladeStateProvider<T>`) ⚡
 
 Stores state in in-memory cache for the lifetime of the application.
 
 ```csharp
-using BladeState;
-using BladeState.Models;
-using BladeState.Providers;
+using GrumpyCoders.BladeState;
+using GrumpyCoders.BladeState.Models;
+using GrumpyCoders.BladeState.Providers;
 
-builder.Services.AddMemoryCacheBladeState<MyState>();
+var profile = new BladeStateProfile
+{
+    InstanceName = "MyMemoryCacheApp",
+    AutoEncrypt = true,
+    EncryptionKey = "my-crypto-key"
+};
+
+builder.Services.AddMemoryCacheBladeState<MyState>(profile);
 ```
+
+---
 
 ### 2. SQL Provider (`SqlBladeStateProvider<T>`) 📃
 
@@ -79,24 +82,28 @@ CREATE TABLE BladeState (
 
 ```csharp
 using Microsoft.Data.SqlClient;
-using BladeState;
-using BladeState.Models;
-using BladeState.Providers;
+using GrumpyCoders.BladeState;
+using GrumpyCoders.BladeState.Models;
+using GrumpyCoders.BladeState.Providers;
 
-var profile = new BladeStateProfile();
+var profile = new BladeStateProfile
+{
+    InstanceName = "MySqlApp",
+    AutoEncrypt = true,
+    EncryptionKey = "my-crypto-key"
+};
 
 builder.Services.AddSqlBladeState<MyState>(
     () => new SqlConnection("Server=localhost;Database=BladeStateDb;User Id=yourUserId;Password=YourStrong(!)Password;TrustServerCertificate=True;"),
-    profile,
-    SqlType.MySql
+    profile
 );
-
 ```
 
 #### How it works
 
-- Uses a simple key/value table (`InstanceId`, `Data`).
-- JSON serialization handled automatically.
+* Uses a simple key/value table (`InstanceId`, `Data`).
+* JSON serialization handled automatically.
+* Encryption honored from the `BladeStateProfile`.
 
 ---
 
@@ -107,26 +114,27 @@ Stores state in Redis using `StackExchange.Redis`.
 #### Registration
 
 ```csharp
-using BladeState.Providers;
+using GrumpyCoders.BladeState.Providers;
 using StackExchange.Redis;
+
+var profile = new BladeStateProfile
+{
+    InstanceName = "MyAppUsingRedis",
+    AutoEncrypt = true,
+    EncryptionKey = "my-crypto-key"
+};
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect("localhost")
 );
 
-builder.Services.AddRedisBladeState<MyState>(
-    new BladeStateProfile
-    {
-        InstanceName = "MyAppUsingRedis" //If InstanceName is not provided the value will be 'BladeState'
-    }
-);
-
+builder.Services.AddRedisBladeState<MyState>(profile);
 ```
 
 #### Notes
 
-- Stores JSON under a Redis key formatted like `{BladeStateProfile.InstanceName}:{BladeStateProfile.InstanceId}`.
-- Fast, distributed, great for scale-out.
+* Stores JSON under a Redis key formatted like `{InstanceName}:{InstanceId}`.
+* Fast, distributed, great for scale-out.
 
 ---
 
@@ -134,111 +142,88 @@ builder.Services.AddRedisBladeState<MyState>(
 
 Uses an Entity Framework `DbContext` to persist state directly in your model.
 
-#### Registration
-
-````csharp
-
-## 1. Create your EF Core `DbContext`
-
-Define a `DbContext` that includes your `BladeStateEntity` set. This is where BladeState will persist state.
-- Optionally you may inherit from the IBladeStateEntity to extend for your organization
+#### 1. Define your profile
 
 ```csharp
-using BladeState.Models;
-using Microsoft.EntityFrameworkCore;
-
-namespace MyApp.Data;
-
-public class MyDbContext : DbContext
-{
-    public LicenseDbContext(DbContextOptions<MyDbContext> options)
-        : base(options) { }
-
-    // Required for BladeState
-    public DbSet<BladeStateEntity> BladeStates { get; set; }
-}
-````
-
----
-
-## 2. Configure `DbContext` in `Program.cs`
-
-Register your `DbContext` with EF Core.
-
-```csharp
-// --- EF Core ---
-builder.Services.AddDbContext<MyDbContext>(options =>
-    options.UseSqlite(
-        builder.Configuration.GetConnectionString("MyConnection")
-    )
-);
-```
-
----
-
-## 3. Add a BladeState Profile
-
-In your `appsettings.json`, define the BladeState profile:
-
-```json
-{
-  "BladeState": {
-    "Profile": {
-      "AutoEncrypt": true,
-      "EncryptionKey": "your-crypto-key"
-    }
-  }
-}
-```
-
-Then load it inside `Program.cs`:
-
-```csharp
-// --- BladeState ---
 BladeStateProfile profile = builder.Configuration
     .GetSection("BladeState:Profile")
     .Get<BladeStateProfile>();
 ```
 
----
-
-## 4. Register the EF Core Provider
-
-Now wire up the EF Core provider for your state type.
+#### 2. Register the EF Core Provider
 
 ```csharp
-// Register EfCoreBladeStateProvider with your types
-builder.Services.AddEfCoreBladeState<MyState>(profile);
+using Microsoft.EntityFrameworkCore;
+using GrumpyCoders.BladeState;
+using GrumpyCoders.BladeState.Models;
+using GrumpyCoders.BladeState.Providers;
+
+builder.Services.AddEfCoreBladeState<MyState>(
+    options => options.UseSqlServer("Server=localhost;Database=BladeStateDb;User Id=yourUserId;Password=YourStrong(!)Password;TrustServerCertificate=True;"),
+    profile
+);
 ```
+
+#### ✅ Summary
+
+* `DbContext` must include `DbSet<BladeStateEntity>`.
+* Uses `IDbContextFactory<BladeStateDbContext>` for safe, scoped creation.
+* Profile and crypto are handled automatically as singletons.
+* Encryption is optional but strongly recommended.
+
 ---
 
-## ✅ Summary
+### 5. File System Provider (`FileSystemBladeStateProvider<T>`) 📁
 
-- `DbContext` must include `DbSet<BladeStateEntity>`.
-- `AddDbContext` should be **Scoped**.
-- Use `AddEfCoreBladeState<TState, TEntity, TDbContext>(profile)` for wiring.
+Stores state as JSON files on the local or networked file system.
+Great for simple persistence without a database or cache layer.
+
+#### Registration
+
+```csharp
+using GrumpyCoders.BladeState.Providers;
+
+builder.Services.AddFileSystemBladeState<MyState>(
+    new BladeStateProfile
+    {
+        InstanceName = "MyAppFileSystem",
+        InstanceId = "MyInstance",
+        AutoEncrypt = true,
+        EncryptionKey = "my-crypto-key",
+        FileSystemProviderOptions = new()
+        {
+            BasePath = "C:\\BladeState" // default is system temp folder (tmp environment variable). This can be a network share
+        }
+    }
+);
+```
+
+#### How it works
+
+* Persists state as `.json` files under the configured `BasePath`.
+* File names use the format `{InstanceName}\{InstanceId}.json`.
+* Honors encryption settings via `BladeStateProfile`.
 
 ---
 
-## ⚖️ Provider Comparison
+## ⚖️ Provider Comparison (updated)
 
-| Provider         | Best For                                     | Pros                                       | Cons                                                  |
-| ---------------- | -------------------------------------------- | ------------------------------------------ | ----------------------------------------------------- |
-| **Memory Cache** | Performance and application level processing | Simple, next to no overhead, fast          | Requires custom handling for persistence if necessary |
-| **SQL**          | Simple persistence in relational DB          | Works out of the box, JSON storage         | Tied to SQL dialect, less efficient than Redis        |
-| **Redis**        | High-performance distributed cache           | Fast, scalable, great for web farms        | Requires Redis infrastructure, persistence optional   |
-| **EF Core**      | Strongly-typed relational models             | Uses your existing EF models, schema-first | More overhead, requires migrations                    |
+| Provider         | Best For                                     | Pros                                                    | Cons                                                  |
+| ---------------- | -------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------- |
+| **Memory Cache** | Performance and application level processing | Simple, next to no overhead, fast                       | Requires custom handling for persistence if necessary |
+| **SQL**          | Simple persistence in relational DB          | Works out of the box, JSON storage, encryption included | Tied to SQL dialect, less efficient than Redis        |
+| **Redis**        | High-performance distributed cache           | Fast, scalable, great for web farms                     | Requires Redis infrastructure, persistence optional   |
+| **EF Core**      | Strongly-typed relational models             | Uses your existing EF models, schema-first, crypto safe | More overhead, requires migrations                    |
+| **File System**  | Lightweight persistence without DB/cache     | Easy to set up, portable, works offline, human-readable | File I/O overhead, not ideal for high concurrency     |
 
 ---
 
 ## 🧩 Simple Service Collection Wire-up
 
--- this syntax is included primarily to extend BladeState with your own providers
-
-Usage:
+This syntax is included primarily to extend BladeState with your own providers.
 
 ```csharp
-builder.Services.AddBladeState<MyState, SqlBladeStateProvider<MyState>>();
+builder.Services.AddBladeState<MyState, SqlBladeStateProvider<MyState>>(profile);
 ```
 
 ---
@@ -264,6 +249,8 @@ public class MyService
 }
 ```
 
+---
+
 ## 💿 Drive BladeState with BladeStateProfile!
 
 ```csharp
@@ -274,15 +261,18 @@ var profile = new BladeStateProfile
     InstanceTimeout = TimeSpan.FromMinutes(120),
     SaveOnInstanceTimeout = true,
     AutoEncrypt = true,
-    EncryptionKey = "my-crypto-key"
-}
+    EncryptionKey = "my-crypto-key",
+    AutoClearOnDispose = true,
+    FileSystemProviderOptions = new(),
+    SqlProviderOptions = new()
+};
 ```
+
+---
 
 ## ⚙️ Example: Binding Profile from appsettings.json
 
-You can configure profiles from appsettings.json and register them directly with a couple simple steps:
-
-1. Add the following structure to your appsettings.json file
+1. Add the following structure to your **appsettings.json**:
 
 ```json
 {
@@ -295,12 +285,12 @@ You can configure profiles from appsettings.json and register them directly with
 }
 ```
 
-2. Get the section and pass the BladeStateProfile to the 'AddBladeState();' extension method in your Program.cs
+2. Get the section and register BladeState in **Program.cs**:
 
 ```csharp
-using BladeState;
-using BladeState.Models;
-using BladeState.Providers;
+using GrumpyCoders.BladeState;
+using GrumpyCoders.BladeState.Models;
+using GrumpyCoders.BladeState.Providers;
 
 var profile = builder.Configuration.GetSection("BladeState:Profile").Get<BladeStateProfile>();
 
@@ -313,61 +303,80 @@ builder.Services.AddBladeState<MyAppState, SqlBladeStateProvider<MyAppState>>(pr
 
 BladeState automatically encrypts persisted state data using AES encryption.
 
-Enabled by default – you don’t need to do anything.
-
-Encryption key – if not provided, BladeState will generate one automatically, simplifying encryption and decryption without explicit wire-up.  
-You may also supply your own key by configuring a `BladeStateProfile`, example below:
+* Enabled by default – you don’t need to do anything.
+* Encryption key – if not provided, BladeState will generate one automatically.
 
 ```csharp
 var profile = new BladeStateProfile
 {
-    AutoEncrypt = true,              // enable encryption
-    EncryptionKey = "my-crypto-key"  // optional custom key
+    AutoEncrypt = true,
+    EncryptionKey = "my-crypto-key"
 };
 
 builder.Services.AddBladeState<MyAppState, SqlBladeStateProvider<MyAppState>>(profile);
 ```
 
-Optionally (and NOT to be used for Production Environments - the universe frowns heavily upon that action 😔):
-You may turn off encryption – you can explicitly disable it via **AutoEncrypt** in your profile:
-
-This is not necessary even when wiring up your own BladeStateProvider.
-The Decrypt/Encrypt State methods should be explicitly used.
+If you want to disable encryption (not recommended):
 
 ```csharp
 var profile = new BladeStateProfile
 {
-    AutoEncrypt = false  // disables automatic crypto transforms in the 'out of the box' providers
+    AutoEncrypt = false
 };
 
 builder.Services.AddBladeState<MyAppState, RedisBladeStateProvider<MyAppState>>(profile);
 ```
 
+---
+
 ## ❗Built-In Events
 
-When a provider method is called an event will be raised to be handled by consuming components and services.
-This is useful for reliable UI updates.
+When a provider method is called, an event is raised for consuming components and services.
+This enables reliable UI updates.
 
 ```csharp
-
-// inject the provider
 [Inject]
 required public MemoryCacheBladeStateProvider<MyState> Provider { get; set; }
 
-// add an event handler (anonymously)
+// anonymous handler
 Provider.OnStateChange += (sender, args) =>
 {
-    // get updated state if need be
     var state = args.State;
-
-    // do something
-    Console.WriteLine($"State changed: {args.EventType} for {args.InstanceId}! There are now {state.Items.Count} items!");
+    Console.WriteLine($"State changed: {args.EventType} for {args.InstanceId}! Count: {state.Items.Count}");
 };
 
-// add a custom handler
+// custom handler
 Provider.OnStateChange += MyCustomEventHandler;
 ```
 
+---
+
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+For enterprise users and large teams licensing is required.
+
+* Add license key to **appsettings.json**:
+
+```json
+{
+  "BladeState": {
+    "LicenseKey": "YOUR-LICENSE-KEY-HERE",
+    "Profile": {
+      "InstanceName": "MyApp",
+      "AutoEncrypt": true,
+      "EncryptionKey": "my-crypto-key"
+    }
+  }
+}
+```
+
+* Register it in **Program.cs**:
+
+```csharp
+builder.Services.AddBladeStateLicense(configuration.GetSection("BladeState")["LicenseKey"]);
+```
+
+That’s it!
+
+This project is licensed - see the [LICENSE](LICENSE) file for details.
+Previously obtained versions (before v1.0.7 and before October 1st 2025) may continue to be used via MIT Licensing.

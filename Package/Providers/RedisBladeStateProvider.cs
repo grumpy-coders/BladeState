@@ -1,0 +1,101 @@
+using GrumpyCoders.BladeState.Cryptography;
+using GrumpyCoders.BladeState.Enums;
+using GrumpyCoders.BladeState.Models;
+using StackExchange.Redis;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace GrumpyCoders.BladeState.Providers;
+
+public class RedisBladeStateProvider<T>(
+	IConnectionMultiplexer redis,
+	BladeStateCryptography bladeStateCryptography,
+	BladeStateProfile bladeStateProfile
+) : BladeStateProvider<T>(bladeStateCryptography, bladeStateProfile) where T : class, new()
+{
+	private readonly IDatabase _redis = redis.GetDatabase();
+
+	private string GetKey() => $"{Profile.InstanceName}:{Profile.InstanceId}";
+
+	public override async Task<T> LoadStateAsync(CancellationToken cancellationToken = default)
+	{
+		if (cancellationToken.IsCancellationRequested)
+		{
+			return State;
+		}
+
+		await CheckTimeoutAsync(cancellationToken);
+
+		RedisValue redisValue = await _redis.StringGetAsync(GetKey()).ConfigureAwait(false);
+
+		if (redisValue.IsNullOrEmpty)
+		{
+			State = new T();
+			OnStateChange(ProviderEventType.Load);
+			return State;
+		}
+
+		if (Profile.AutoEncrypt)
+		{
+			redisValue = Decrypt(redisValue);
+		}
+
+		State = JsonSerializer.Deserialize<T>(redisValue);
+		OnStateChange(ProviderEventType.Load);
+		return State;
+	}
+
+	public override async Task SaveStateAsync(T state, CancellationToken cancellationToken = default)
+	{
+		if (cancellationToken.IsCancellationRequested)
+			return;
+
+		if (Profile.AutoEncrypt)
+		{
+			string cipherText = EncryptState();
+			await _redis.StringSetAsync(GetKey(), cipherText).ConfigureAwait(false);
+			return;
+		}
+
+		await _redis.StringSetAsync(GetKey(), JsonSerializer.Serialize(state)).ConfigureAwait(false);
+
+		await CheckTimeoutAsync(cancellationToken);
+
+		OnStateChange(ProviderEventType.Save);
+	}
+
+	public override async Task ClearStateAsync(CancellationToken cancellationToken = default)
+	{
+		if (cancellationToken.IsCancellationRequested)
+			return;
+
+		await _redis.KeyDeleteAsync(GetKey()).ConfigureAwait(false);
+
+		State = new T();
+
+		await CheckTimeoutAsync(cancellationToken);
+
+		OnStateChange(ProviderEventType.Clear);
+	}
+
+	/// <summary>
+	/// Async disposal hook: cleanup persisted state before disposal.
+	/// </summary>
+	protected override async ValueTask DisposeAsyncCore()
+	{
+		try
+		{
+			if (Profile.AutoClearOnDispose)
+			{
+				await ClearStateAsync(CancellationToken.None).ConfigureAwait(false);
+			}
+		}
+		catch
+		{
+			// swallow or log exceptions, since Dispose must not throw
+		}
+
+		await base.DisposeAsyncCore().ConfigureAwait(false);
+	}
+}
