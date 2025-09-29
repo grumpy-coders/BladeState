@@ -228,6 +228,12 @@ public class SqlBladeStateProvider<T>(Func<DbConnection> connectionFactory, Blad
 					 Data TEXT NOT NULL
 				);",
 
+			SqlType.None => $@"
+				CREATE TABLE IF NOT EXISTS [{Profile.InstanceName}] (
+					 InstanceId NVARCHAR(200) PRIMARY KEY,
+					 Data TEXT NOT NULL
+				);",
+
 			_ => throw new NotSupportedException("Unsupported SQL type")
 		};
 
