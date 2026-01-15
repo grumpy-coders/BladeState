@@ -1,47 +1,19 @@
-# BladeState License
+MIT License
 
-BladeState is provided under a hybrid license model.  
-It is **free for individuals** and requires a **commercial license** for teams, businesses, or enterprise use.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
----
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-## Free / Community License
-- Up to **1 developer**
-- Up to **2 applications**
-- **Non-commercial** or internal projects only
-- Includes updates & community support
-
----
-
-## Standard License (Per-Developer)
-- **$9.99/month per developer**
-- Unlimited applications for that developer
-- Commercial use allowed
-- Updates + email support
-
----
-
-## Team License
-- **$44.99/month (up to 5 developers)**
-- Unlimited applications for the team
-- Commercial use allowed
-- Updates + priority support
-
----
-
-## Enterprise License
-- **Custom pricing (starting at $99.99/month)**
-- Flexible terms, including **per-application licensing** if required
-- Unlimited developers & applications (unless otherwise negotiated)
-- Priority, white-glove support, SLAs, and custom feature discussions
-
----
-
-## Notes
-- Licenses are based on the number of **developers actively working on BladeState-powered applications**, not end users.
-- Per-application licensing is **only available for enterprise accounts** and negotiated on a case-by-case basis.
-- BladeState operates on the **honor system**, but we encourage teams and organizations to support continued development through proper licensing.
-
----
-
-© 2025 GrumpyCoders. All rights reserved.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
